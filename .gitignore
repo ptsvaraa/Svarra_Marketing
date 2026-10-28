@@ -1,0 +1,16 @@
+# Dependencies are installed by the host (Vercel runs `npm install` on Linux).
+# Committing them ships Windows-only binaries that break the Linux build.
+node_modules/
+
+# Build output; Vercel builds it fresh on every deploy.
+dist/
+
+# Local tooling and editor files
+.claude/
+.vercel/
+*.log
+.DS_Store
+Thumbs.db
+.env
+.env.*
+!.env.example
