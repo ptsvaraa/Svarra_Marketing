@@ -17,29 +17,31 @@ export interface TeamMember {
 }
 
 export const TEAM: readonly TeamMember[] = [
-  {
-    id: 'jeet',
-    photo: 'jeet.webp',
-    name: 'Jeet',
-    role: 'CEO',
-    location: 'USA',
-    bio: 'Columbia Business School alumnus with experience at Groww, LVMH, and Times of India Group’s venture capital division. Brings expertise in technology, product management, and venture capital.',
-  },
+
   {
     id: 'sandhya',
     photo: 'sandhya.webp',
     name: 'Sandhya',
-    role: 'CTO',
+    role: 'CEO',
     location: 'USA',
     bio: 'MCA-qualified technology professional with 15+ years of experience in software services, product development, and project management, overseeing Svaraa’s product execution and delivery.',
   },
+  
   {
-    id: 'kannan',
-    photo: 'kannan.webp',
-    name: 'Kannan',
-    role: 'Sales & Distribution Mentor',
-    bio: 'Financial services veteran with extensive experience at Citibank and leading NBFCs. Spearheads Svaraa’s B2B partnerships and India distribution network.',
+    id: 'jeet',
+    photo: 'jeet.webp',
+    name: 'Jeet',
+    role: 'COO',
+    location: 'USA',
+    bio: 'Columbia Business School alumnus with experience at Groww, LVMH, and Times of India Group’s venture capital division. Brings expertise in technology, product management, and venture capital.',
   },
+  {
+    id: 'varun',
+    name: 'Varun',
+    role: 'AI Research Mentor',
+    bio: 'Strategist in finance and former software engineer, with projects at Google and Goldman Sachs. Deep background in algorithms, AI/machine learning and data mining, sharpened from the Math and Informatics Olympiads and RSI onwards.',
+  },
+ 
   {
     id: 'ravi',
     photo: 'ravi.webp',
@@ -47,11 +49,19 @@ export const TEAM: readonly TeamMember[] = [
     role: 'Hardware Mentor',
     bio: 'Director at Marsin Technologies with 20+ years of hardware manufacturing experience, specializing in OEM production, wearables, and strategic component sourcing from China.',
   },
+
+   {
+    id: 'kannan',
+    photo: 'kannan.webp',
+    name: 'Kannan',
+    role: 'Sales & Distribution Mentor',
+    bio: 'Financial services veteran with extensive experience at Citibank and leading NBFCs. Spearheads Svaraa’s B2B partnerships and India distribution network.',
+  },
   {
     id: 'suresh',
     photo: 'suresh.webp',
     name: 'Suresh Rangarajan',
-    role: 'Investor',
+    role: 'Investor & Mentor',
     bio: 'Serial entrepreneur with 30+ years of leadership. Yale Executive MBA valedictorian, former Citibank VP, and Founder & CEO of Colive. Former CEO of TimesofMoney.',
   },
 ];

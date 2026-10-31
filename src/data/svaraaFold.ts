@@ -4,7 +4,6 @@ export type FoldModel = 'svaraa' | 'puck' | 'cable';
 /** Named layers of the fold-over pendant, used to highlight (and optionally fade around) a part. */
 export type FoldLayer =
   | 'housing'
-  | 'usb'
   | 'switch'
   | 'face'
   | 'button'

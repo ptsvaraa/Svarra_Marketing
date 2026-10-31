@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   ArrowDown,
+  BadgePercent,
   BatteryCharging,
   Bell,
   Check,
@@ -11,10 +12,22 @@ import {
   Package,
   ShieldCheck,
   Sparkles,
+  Truck,
   Ticket,
   type LucideIcon,
 } from 'lucide-react';
-import { formatFee, IN_THE_BOX, PREORDER_FAQ, RESERVATION_FEE_USD } from '../data/preorder';
+import {
+  BALANCE_ON_DELIVERY_USD,
+  formatFee,
+  IN_THE_BOX,
+  LIST_PRICE_USD,
+  MAX_QUANTITY,
+  PREORDER_DISCOUNT_PERCENT,
+  PREORDER_FAQ,
+  PREORDER_PRICE_USD,
+  RESERVATION_FEE_USD,
+  SAVING_USD,
+} from '../data/preorder';
 import { cn } from '../lib/cn';
 import { PendantArt } from '../components/preorder/PendantArt';
 import { PreorderForm } from '../components/preorder/PreorderForm';
@@ -37,8 +50,105 @@ const FLOATING: { icon: LucideIcon; label: string; className: string }[] = [
 const PERKS: { icon: LucideIcon; title: string; body: string }[] = [
   { icon: Crown, title: 'First-edition access', body: 'The first Svaraa Fold pendants are made in a limited batch.' },
   { icon: Bell, title: 'Hear first', body: 'Delivery timelines and launch news reach you before anyone else.' },
-  { icon: Ticket, title: `${formatFee(RESERVATION_FEE_USD)} holds your place`, body: 'A small reservation fee secures your spot in the first edition.' },
+  {
+    icon: BadgePercent,
+    title: `${PREORDER_DISCOUNT_PERCENT}% founding discount`,
+    body: `Pre-order at ${formatFee(PREORDER_PRICE_USD)} instead of ${formatFee(LIST_PRICE_USD)}.`,
+  },
+  {
+    icon: Ticket,
+    title: `${formatFee(RESERVATION_FEE_USD)} holds your place`,
+    body: 'A small reservation fee secures your spot in the first edition.',
+  },
 ];
+
+/** How the pre-order price is paid: a little today, the rest once delivery begins. */
+const PAYMENT_STEPS: { icon: LucideIcon; when: string; amount: number; note: string }[] = [
+  {
+    icon: Ticket,
+    when: 'Today',
+    amount: RESERVATION_FEE_USD,
+    note: 'Reservation fee. Holds your place in the first edition.',
+  },
+  {
+    icon: Truck,
+    when: 'Once we start delivery',
+    amount: BALANCE_ON_DELIVERY_USD,
+    note: 'The balance, plus applicable taxes and delivery charges.',
+  },
+];
+
+function PriceCard() {
+  return (
+    <motion.div
+      {...fade}
+      aria-labelledby="price-title"
+      role="region"
+      className="glass relative overflow-hidden rounded-3xl p-6 sm:p-8"
+    >
+      {/* Soft gold glow in the corner, echoing the pendant stage. */}
+      <div
+        className="pointer-events-none absolute -top-24 -right-24 size-64 rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--c-gold)_22%,transparent)_0%,transparent_70%)]"
+        aria-hidden="true"
+      />
+      <div className="relative flex flex-wrap items-center justify-between gap-3">
+        <p id="price-title" className="text-xs font-medium tracking-[0.32em] text-gold uppercase">
+          Founding price
+        </p>
+        <span className="rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs font-medium text-gold">
+          {PREORDER_DISCOUNT_PERCENT}% off for pre-orders
+        </span>
+      </div>
+
+      <div className="relative mt-5 flex flex-wrap items-end gap-x-4 gap-y-1">
+        <p className="font-serif text-6xl leading-none tracking-tight text-heading tabular-nums">
+          {formatFee(PREORDER_PRICE_USD)}
+        </p>
+        <div className="pb-1.5">
+          <p className="text-lg text-subtle tabular-nums">
+            <span className="sr-only">Usual price </span>
+            <s className="decoration-gold/70">{formatFee(LIST_PRICE_USD)}</s>
+          </p>
+          <p className="text-sm text-muted">per pendant</p>
+        </div>
+      </div>
+      <p className="relative mt-3 text-sm text-success">You save {formatFee(SAVING_USD)} on every pendant.</p>
+
+      <span
+        className="relative mt-7 block h-px bg-gradient-to-r from-gold/60 via-gold/25 to-transparent"
+        aria-hidden="true"
+      />
+
+      <p className="relative mt-6 text-sm font-medium text-heading">How you pay</p>
+      <ol className="relative mt-4 flex flex-col">
+        {PAYMENT_STEPS.map(({ icon: Icon, when, amount, note }, i) => (
+          <li key={when} className="relative flex gap-4 pb-6 last:pb-0">
+            {/* Gold thread joining the two steps. */}
+            {i < PAYMENT_STEPS.length - 1 && (
+              <span className="absolute top-11 bottom-1 left-[1.375rem] w-px bg-gold/35" aria-hidden="true" />
+            )}
+            <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-gold/40 bg-gold/10 text-gold">
+              <Icon className="size-5" aria-hidden="true" />
+            </span>
+            <div className="flex min-w-0 flex-1 items-start justify-between gap-4 pt-1">
+              <div>
+                <p className="text-xs tracking-[0.18em] text-muted uppercase">{when}</p>
+                <p className="mt-1 text-[0.95rem] leading-relaxed text-ink">{note}</p>
+              </div>
+              <p className="font-serif text-3xl leading-none text-heading tabular-nums">{formatFee(amount)}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+
+      <p className="relative mt-7 border-t border-line pt-4 text-xs leading-relaxed text-subtle">
+        Prices in US dollars. {formatFee(RESERVATION_FEE_USD)} + {formatFee(BALANCE_ON_DELIVERY_USD)} ={' '}
+        {formatFee(PREORDER_PRICE_USD)} per pendant, before taxes and delivery. Up to {MAX_QUANTITY} pendants per
+        household.
+      </p>
+    </motion.div>
+  );
+}
 
 const fade = {
   initial: { opacity: 0, y: 20 },
@@ -78,7 +188,11 @@ export function PreorderPage() {
               responds and reaches family when it matters.
             </p>
             <ul className="mt-7 flex flex-wrap gap-x-6 gap-y-3 text-sm text-ink">
-              {[`Reserve for just ${formatFee(RESERVATION_FEE_USD)}`, 'Limited first-edition batch', 'Delivery details confirmed with you'].map((t) => (
+              {[
+                `Reserve for just ${formatFee(RESERVATION_FEE_USD)}`,
+                `${PREORDER_DISCOUNT_PERCENT}% off the ${formatFee(LIST_PRICE_USD)} price`,
+                'Limited first-edition batch',
+              ].map((t) => (
                 <li key={t} className="flex items-center gap-2">
                   <Check className="size-4 text-success" aria-hidden="true" />
                   {t}
@@ -101,8 +215,14 @@ export function PreorderPage() {
               aria-hidden="true"
             />
             {/* Rings are stronger in light mode, where pale gold barely shows on the cream background. */}
-            <div className="absolute inset-[12%] rounded-full border-[1.5px] border-gold/55 dark:border dark:border-gold/25" aria-hidden="true" />
-            <div className="absolute inset-[2%] rounded-full border border-dashed border-gold/45 dark:border-gold/20" aria-hidden="true" />
+            <div
+              className="absolute inset-[12%] rounded-full border-[1.5px] border-gold/55 dark:border dark:border-gold/25"
+              aria-hidden="true"
+            />
+            <div
+              className="absolute inset-[2%] rounded-full border border-dashed border-gold/45 dark:border-gold/20"
+              aria-hidden="true"
+            />
             <motion.div
               initial={{ opacity: 0, scale: 0.94, rotate: -6 }}
               animate={{ opacity: 1, scale: 1, rotate: 0 }}
@@ -134,11 +254,15 @@ export function PreorderPage() {
               transition={{ delay: 0.8, duration: 0.5, ease: 'easeOut' }}
               className="glass absolute right-0 bottom-[2%] rounded-2xl px-5 py-3.5 text-right shadow-[0_20px_40px_-22px_var(--c-shadow)] sm:right-[4%]"
             >
-              <p className="text-xs tracking-[0.18em] text-muted uppercase">Reserve today</p>
+              <p className="text-xs tracking-[0.18em] text-muted uppercase">Pre-order price</p>
               <p className="font-serif text-3xl leading-tight text-heading">
-                {formatFee(RESERVATION_FEE_USD)}
-                <span className="ml-1.5 font-sans text-sm text-muted">to hold yours</span>
+                {formatFee(PREORDER_PRICE_USD)}
+                <s className="ml-2 font-sans text-base text-subtle decoration-gold/70">
+                  <span className="sr-only">instead of </span>
+                  {formatFee(LIST_PRICE_USD)}
+                </s>
               </p>
+              <p className="mt-0.5 text-xs text-muted">{formatFee(RESERVATION_FEE_USD)} today to reserve</p>
             </motion.div>
           </div>
         </div>
@@ -185,6 +309,8 @@ export function PreorderPage() {
               </ul>
             </motion.div>
 
+            <PriceCard />
+
             <motion.div {...fade} className="glass rounded-3xl p-6 sm:p-8">
               <div className="flex items-center gap-3">
                 <Package className="size-5 text-primary" aria-hidden="true" />
@@ -230,9 +356,14 @@ export function PreorderPage() {
               <div className="mb-8 flex items-start justify-between gap-4 border-b border-line pb-6">
                 <div>
                   <h2 className="font-serif text-3xl text-heading">Reserve your Svaraa</h2>
-                  <p className="mt-1.5 text-sm text-muted">Takes about two minutes. {formatFee(RESERVATION_FEE_USD)} per pendant to reserve.</p>
+                  <p className="mt-1.5 text-sm text-muted">
+                    Takes about two minutes. {formatFee(RESERVATION_FEE_USD)} per pendant today,{' '}
+                    {formatFee(BALANCE_ON_DELIVERY_USD)} at delivery.
+                  </p>
                 </div>
-                <span className="shrink-0 rounded-full bg-gold/15 px-3 py-1 text-xs font-medium text-gold">First edition</span>
+                <span className="shrink-0 rounded-full bg-gold/15 px-3 py-1 text-xs font-medium text-gold">
+                  First edition
+                </span>
               </div>
               <PreorderForm />
             </div>

@@ -16,8 +16,10 @@ const ORGS: readonly Org[] = [
   { name: 'Columbia Business School', href: 'https://business.columbia.edu/', logo: 'columbia-business-school.svg', width: 146, height: 61, className: 'h-11' },
   { name: 'Yale School of Management', href: 'https://som.yale.edu/', logo: 'yale-som.webp', width: 480, height: 238, className: 'h-12' },
   { name: 'University of Pennsylvania', href: 'https://www.upenn.edu/', logo: 'penn.svg', width: 248, height: 115, className: 'h-12' },
-  { name: 'University of Chicago', href: 'https://www.uchicago.edu/', logo: 'uchicago.svg', width: 262, height: 53, className: 'h-7' },
+  { name: 'University of Sydney', href: 'https://www.sydney.edu.au/', logo: 'sydney.webp', width: 347, height: 120, className: 'h-11' },
+  { name: 'University of Illinois Chicago', href: 'https://www.uic.edu/', logo: 'uic.svg', width: 283, height: 162, className: 'h-12' },
   { name: 'IIT Kharagpur', href: 'https://www.iitkgp.ac.in/', logo: 'iit-kharagpur.webp', width: 513, height: 123, className: 'h-8' },
+  { name: 'IIIT Pune', href: 'https://www.iiitp.ac.in/', logo: 'iiitp.webp', width: 160, height: 160, className: 'h-14' },
 ];
 
 /**
@@ -78,7 +80,9 @@ export function TrustStrip() {
           id="trust-title"
           className="mx-auto max-w-3xl text-center font-serif text-2xl leading-snug tracking-tight text-balance text-heading sm:text-[1.75rem]"
         >
-          Core Team and Advisors <em className="text-accent">hail from</em>
+          Core Team and Advisors
+          {/* Second line in gold, like the italic second line of the other section headings. */}
+          <em className="block text-accent">hail from and worked at</em>
         </h2>
         <div className="marquee-viewport no-scrollbar -mx-4 mt-6 overflow-hidden px-4 py-2 sm:mx-0 sm:px-0">
           <div className="marquee-track flex w-max">

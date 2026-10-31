@@ -45,7 +45,7 @@ export const WEARERS = [
 ] as const;
 
 /** Most pendants an individual (one household) can reserve. */
-export const MAX_QUANTITY = 2;
+export const MAX_QUANTITY = 4;
 
 export const BUYER_TYPES = [
   { value: 'individual', label: 'Individual' },
@@ -63,9 +63,7 @@ export const BUSINESS_CONTACT_EMAIL = 'sales@svaraa.ai';
 
 /** Allowed quantity range for each kind of buyer. */
 export const quantityRange = (buyer: BuyerType) =>
-  buyer === 'business'
-    ? { min: BUSINESS_MIN_QUANTITY, max: BUSINESS_MAX_QUANTITY }
-    : { min: 1, max: MAX_QUANTITY };
+  buyer === 'business' ? { min: BUSINESS_MIN_QUANTITY, max: BUSINESS_MAX_QUANTITY } : { min: 1, max: MAX_QUANTITY };
 
 /** Product name shown on the Stripe payment page and receipts. */
 export const PRODUCT_NAME = 'Svaraa Fold';
@@ -74,6 +72,17 @@ export const PRODUCT_NAME = 'Svaraa Fold';
 export const RESERVATION_FEE_USD = 5;
 
 export const formatFee = (usd: number) => `$${usd}`;
+
+/**
+ * Pendant pricing. The pre-order price is the list price less the pre-order discount,
+ * paid in two parts: the reservation fee today and the balance once delivery starts.
+ *   $130 list − 20% = $104 = $5 today + $99 at delivery (plus taxes and delivery charges).
+ */
+export const LIST_PRICE_USD = 130;
+export const PREORDER_DISCOUNT_PERCENT = 20;
+export const PREORDER_PRICE_USD = (LIST_PRICE_USD * (100 - PREORDER_DISCOUNT_PERCENT)) / 100;
+export const BALANCE_ON_DELIVERY_USD = PREORDER_PRICE_USD - RESERVATION_FEE_USD;
+export const SAVING_USD = LIST_PRICE_USD - PREORDER_PRICE_USD;
 
 /** Business orders: one fee to hold the organisation's place, plus a booking amount per pendant. */
 export const BUSINESS_HOLD_FEE_USD = 5;
@@ -135,8 +144,12 @@ export const IN_THE_BOX = [
 
 export const PREORDER_FAQ = [
   {
+    q: 'What is the full price of Svaraa Fold?',
+    a: `Svaraa Fold will be $${LIST_PRICE_USD}. Pre-orders get ${PREORDER_DISCOUNT_PERCENT}% off, so you pay $${PREORDER_PRICE_USD} per pendant: $${RESERVATION_FEE_USD} today to reserve, and the remaining $${BALANCE_ON_DELIVERY_USD} once we start delivery, plus applicable taxes and delivery charges.`,
+  },
+  {
     q: 'How much does it cost to reserve?',
-    a: 'Reserving costs $5 per pendant. Business orders of 10 to 20 pendants pay $5 to hold their place plus a $5 booking amount per pendant. After you fill in this form, you pay by card on a secure Stripe page, and your place in the first edition is held as soon as it goes through.',
+    a: 'Reserving costs $5 per pendant. Business orders of 10 to 20 pendants pay $5 to hold their place plus a $5 booking amount per pendant. After you fill in this form, you pay by card on a secure Stripe page, and your place in the first edition is held as soon as it goes through. The rest of the pre-order price, $99 per pendant plus taxes and delivery charges, is due once we start delivery.',
   },
   {
     q: 'When will my Svaraa arrive?',

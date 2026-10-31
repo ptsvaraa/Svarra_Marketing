@@ -1,6 +1,18 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { AlertCircle, ArrowRight, Building2, CheckCircle2, ChevronDown, Info, Loader2, Lock, Mail, User } from 'lucide-react';
 import {
+  AlertCircle,
+  ArrowRight,
+  Building2,
+  CheckCircle2,
+  ChevronDown,
+  Info,
+  Loader2,
+  Lock,
+  Mail,
+  User,
+} from 'lucide-react';
+import {
+  BALANCE_ON_DELIVERY_USD,
   BUSINESS_CONTACT_EMAIL,
   BUSINESS_MAX_QUANTITY,
   BUYER_TYPES,
@@ -164,7 +176,8 @@ export function PreorderForm() {
         if (draft) setData({ ...EMPTY, ...draft });
         setStatus({
           kind: 'error',
-          message: 'We could not confirm your payment. If you were charged, your receipt from Stripe is your confirmation.',
+          message:
+            'We could not confirm your payment. If you were charged, your receipt from Stripe is your confirmation.',
         });
       });
   }, []);
@@ -321,7 +334,12 @@ export function PreorderForm() {
               </Field>
             </>
           )}
-          <Field id={id('fullName')} label={business ? 'Contact person' : 'Full name'} error={errors.fullName} className="sm:col-span-2">
+          <Field
+            id={id('fullName')}
+            label={business ? 'Contact person' : 'Full name'}
+            error={errors.fullName}
+            className="sm:col-span-2"
+          >
             <input
               {...bind('fullName')}
               type="text"
@@ -366,7 +384,12 @@ export function PreorderForm() {
       <fieldset className="min-w-0">
         <SectionTitle step={2}>{business ? 'Delivery address (organisation)' : 'Delivery address'}</SectionTitle>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field id={id('addressLine1')} label="Flat / house no., building" error={errors.addressLine1} className="sm:col-span-2">
+          <Field
+            id={id('addressLine1')}
+            label="Flat / house no., building"
+            error={errors.addressLine1}
+            className="sm:col-span-2"
+          >
             <input
               {...bind('addressLine1')}
               type="text"
@@ -376,7 +399,12 @@ export function PreorderForm() {
               className={inputClass(!!errors.addressLine1)}
             />
           </Field>
-          <Field id={id('addressLine2')} label="Street, area or locality" error={errors.addressLine2} className="sm:col-span-2">
+          <Field
+            id={id('addressLine2')}
+            label="Street, area or locality"
+            error={errors.addressLine2}
+            className="sm:col-span-2"
+          >
             <input
               {...bind('addressLine2')}
               type="text"
@@ -426,7 +454,10 @@ export function PreorderForm() {
                   </option>
                 ))}
               </select>
-              <ChevronDown className="pointer-events-none absolute top-1/2 right-4 size-4 -translate-y-1/2 text-muted" aria-hidden="true" />
+              <ChevronDown
+                className="pointer-events-none absolute top-1/2 right-4 size-4 -translate-y-1/2 text-muted"
+                aria-hidden="true"
+              />
             </div>
           </Field>
         </div>
@@ -436,40 +467,42 @@ export function PreorderForm() {
         <SectionTitle step={3}>Your Svaraa</SectionTitle>
         <div className="grid gap-4 sm:grid-cols-2">
           {!business && (
-          <div className="flex flex-col gap-1.5 sm:col-span-2" role="radiogroup" aria-labelledby={id('wearer-label')}>
-            <span id={id('wearer-label')} className="text-sm font-medium text-heading">
-              Who will wear it?
-            </span>
-            <div className="grid grid-cols-3 gap-2">
-              {WEARERS.map((w) => (
-                <label
-                  key={w.value}
-                  className={cn(
-                    'flex h-11 cursor-pointer items-center justify-center rounded-xl border px-2 text-center text-sm transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-primary',
-                    data.wearer === w.value
-                      ? 'border-primary bg-primary/10 font-medium text-primary'
-                      : 'border-line bg-glass-strong text-ink hover:border-primary/40',
-                  )}
-                >
-                  <input
-                    type="radio"
-                    name="wearer"
-                    value={w.value}
-                    checked={data.wearer === w.value}
-                    onChange={() => set('wearer', w.value)}
-                    className="sr-only"
-                  />
-                  {w.label}
-                </label>
-              ))}
+            <div className="flex flex-col gap-1.5 sm:col-span-2" role="radiogroup" aria-labelledby={id('wearer-label')}>
+              <span id={id('wearer-label')} className="text-sm font-medium text-heading">
+                Who will wear it?
+              </span>
+              <div className="grid grid-cols-3 gap-2">
+                {WEARERS.map((w) => (
+                  <label
+                    key={w.value}
+                    className={cn(
+                      'flex h-11 cursor-pointer items-center justify-center rounded-xl border px-2 text-center text-sm transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-primary',
+                      data.wearer === w.value
+                        ? 'border-primary bg-primary/10 font-medium text-primary'
+                        : 'border-line bg-glass-strong text-ink hover:border-primary/40',
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="wearer"
+                      value={w.value}
+                      checked={data.wearer === w.value}
+                      onChange={() => set('wearer', w.value)}
+                      className="sr-only"
+                    />
+                    {w.label}
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>
           )}
           <Field
             id={id('quantity')}
             label="Quantity"
             error={errors.quantity}
-            hint={business ? `${range.min} to ${range.max} pendants per business order` : `Up to ${range.max} per household`}
+            hint={
+              business ? `${range.min} to ${range.max} pendants per business order` : `Up to ${range.max} per household`
+            }
             className="sm:col-span-2"
           >
             <div className="relative">
@@ -487,7 +520,10 @@ export function PreorderForm() {
                   </option>
                 ))}
               </select>
-              <ChevronDown className="pointer-events-none absolute top-1/2 right-4 size-4 -translate-y-1/2 text-muted" aria-hidden="true" />
+              <ChevronDown
+                className="pointer-events-none absolute top-1/2 right-4 size-4 -translate-y-1/2 text-muted"
+                aria-hidden="true"
+              />
             </div>
           </Field>
           {business && (
@@ -528,14 +564,20 @@ export function PreorderForm() {
       </div>
 
       {status.kind === 'cancelled' && (
-        <p role="status" className="flex items-start gap-2.5 rounded-xl border border-line bg-glass-strong px-4 py-3 text-sm text-ink">
+        <p
+          role="status"
+          className="flex items-start gap-2.5 rounded-xl border border-line bg-glass-strong px-4 py-3 text-sm text-ink"
+        >
           <Info className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
           Payment cancelled, so nothing was charged. Your details are still here whenever you&rsquo;re ready.
         </p>
       )}
 
       {status.kind === 'error' && (
-        <p role="alert" className="flex items-start gap-2.5 rounded-xl border border-danger/30 bg-danger-soft px-4 py-3 text-sm text-danger">
+        <p
+          role="alert"
+          className="flex items-start gap-2.5 rounded-xl border border-danger/30 bg-danger-soft px-4 py-3 text-sm text-danger"
+        >
           <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
           {status.message}
         </p>
@@ -553,13 +595,29 @@ export function PreorderForm() {
                 <dd className="text-ink tabular-nums">{formatFee(l.unitUsd * l.quantity)}</dd>
               </div>
             ))}
-          <div className={cn('flex items-center justify-between', lines.length > 1 && 'mt-1.5 border-t border-line pt-2.5')}>
+          <div
+            className={cn(
+              'flex items-center justify-between',
+              lines.length > 1 && 'mt-1.5 border-t border-line pt-2.5',
+            )}
+          >
             <dt className={lines.length > 1 ? 'font-medium text-heading' : 'text-muted'}>
               {lines.length > 1
                 ? 'Total today'
                 : `${lines[0]!.label}${lines[0]!.quantity > 1 ? ` · ${lines[0]!.quantity} × ${formatFee(lines[0]!.unitUsd)}` : ''}`}
             </dt>
             <dd className="font-serif text-xl text-heading tabular-nums">{formatFee(fee)}</dd>
+          </div>
+          {/* The rest of the pre-order price, so nobody mistakes the fee for the full cost. */}
+          <div className="mt-2.5 flex items-start justify-between gap-4 border-t border-dashed border-line pt-2.5">
+            <dt className="text-muted">
+              Due once we start delivery
+              <span className="block text-xs text-subtle">
+                {data.quantity > 1 && `${data.quantity} × ${formatFee(BALANCE_ON_DELIVERY_USD)}, `}plus taxes and
+                delivery charges
+              </span>
+            </dt>
+            <dd className="text-ink tabular-nums">{formatFee(BALANCE_ON_DELIVERY_USD * data.quantity)}</dd>
           </div>
         </dl>
         <button

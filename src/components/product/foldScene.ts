@@ -659,15 +659,6 @@ export class FoldScene {
     housing.add(this.mesh(this.lathe([[0, 0], [1.9, 0], [2.14, 0.05], [2.27, 0.2], [2.33, 0.5], [2.31, 0.8], [2.25, 0.98], [2.16, 1.04], [2.06, 1.03], [2.0, 0.97], [1.99, 0.86], [1.99, 0.22], [1.88, 0.12], [0, 0.12]], 128), M.rose()));
     housing.add(this.mesh(this.lathe([[1.84, 0.78], [2.0, 0.78], [2.0, 0.82], [1.84, 0.82], [1.84, 0.78]], 128), M.rose()));
 
-    // USB-C port on the front edge.
-    const usb = add(main, this.layer('usb', 0, 0));
-    const port = new THREE.ExtrudeGeometry(this.rr(0.66, 0.24, 0.12), { depth: 0.12, bevelEnabled: false, curveSegments: 10 });
-    usb.add(this.mesh(port, M.black(), [0, 0.45, 2.22]));
-    usb.add(this.mesh(new THREE.ExtrudeGeometry(this.rr(0.42, 0.06, 0.03), { depth: 0.02, bevelEnabled: false }), M.gold(), [0, 0.45, 2.335]));
-    const rimShape = this.rr(0.76, 0.34, 0.17);
-    rimShape.holes.push(this.roundRect(0.64, 0.22, 0.11, new THREE.Path()));
-    usb.add(this.mesh(new THREE.ExtrudeGeometry(rimShape, { depth: 0.03, bevelEnabled: false, curveSegments: 10 }), M.metal(), [0, 0.45, 2.325]));
-
     // Physical mic privacy slider on the side wall.
     const sw = add(main, this.layer('switch', 0, 0));
     const swHolder = new THREE.Group();

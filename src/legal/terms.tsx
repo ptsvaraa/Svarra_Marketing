@@ -1,11 +1,15 @@
 import {
+  BALANCE_ON_DELIVERY_USD,
   BUSINESS_BOOKING_PER_PENDANT_USD,
   BUSINESS_CONTACT_EMAIL,
   BUSINESS_HOLD_FEE_USD,
   BUSINESS_MAX_QUANTITY,
   BUSINESS_MIN_QUANTITY,
   formatFee,
+  LIST_PRICE_USD,
   MAX_QUANTITY,
+  PREORDER_DISCOUNT_PERCENT,
+  PREORDER_PRICE_USD,
   PRODUCT_NAME,
   RESERVATION_FEE_USD,
 } from '../data/preorder';
@@ -58,9 +62,12 @@ export const TERMS: LegalDoc = {
               in the limited first edition of {PRODUCT_NAME}.
             </li>
             <li>
-              The reservation fee is <strong>not the full price</strong> of the pendant. We will tell you the final
-              price, any balance due, and the expected delivery date before your pendant ships, and you can decide then
-              whether to complete your order.
+              The reservation fee is <strong>not the full price</strong> of the pendant. {PRODUCT_NAME} is priced at{' '}
+              {formatFee(LIST_PRICE_USD)}; pre-orders receive a {PREORDER_DISCOUNT_PERCENT}% discount, for a pre-order
+              price of {formatFee(PREORDER_PRICE_USD)} per pendant. The reservation fee counts towards that price, and
+              the balance of {formatFee(BALANCE_ON_DELIVERY_USD)} per pendant, plus applicable taxes and delivery
+              charges, is due once we start delivery. We will confirm the amount due and the expected delivery date
+              before your pendant ships, and you can decide then whether to complete your order.
             </li>
             <li>Each household may reserve up to {MAX_QUANTITY} pendants.</li>
             <li>
@@ -68,8 +75,8 @@ export const TERMS: LegalDoc = {
               pendants online. A business reservation costs {formatFee(BUSINESS_HOLD_FEE_USD)} to hold your place plus a
               booking amount of {formatFee(BUSINESS_BOOKING_PER_PENDANT_USD)} per pendant (for example,{' '}
               {BUSINESS_MAX_QUANTITY} pendants cost{' '}
-              {formatFee(BUSINESS_HOLD_FEE_USD + BUSINESS_BOOKING_PER_PENDANT_USD * BUSINESS_MAX_QUANTITY)} in total). For
-              more than {BUSINESS_MAX_QUANTITY}, please contact us first at {mail(BUSINESS_CONTACT_EMAIL)}.
+              {formatFee(BUSINESS_HOLD_FEE_USD + BUSINESS_BOOKING_PER_PENDANT_USD * BUSINESS_MAX_QUANTITY)} in total).
+              For more than {BUSINESS_MAX_QUANTITY}, please contact us first at {mail(BUSINESS_CONTACT_EMAIL)}.
             </li>
             <li>
               Your reservation is confirmed once payment succeeds and you see your reservation reference. We will also
@@ -94,8 +101,8 @@ export const TERMS: LegalDoc = {
         <>
           <ul>
             <li>
-              <strong>If you cancel:</strong> [state whether the reservation fee is refundable, for how long, and how
-              to request it, e.g. &ldquo;You may cancel and receive a full refund of your reservation fee at any time
+              <strong>If you cancel:</strong> [state whether the reservation fee is refundable, for how long, and how to
+              request it, e.g. &ldquo;You may cancel and receive a full refund of your reservation fee at any time
               before your pendant ships, by writing to us.&rdquo;]
             </li>
             <li>
@@ -103,8 +110,8 @@ export const TERMS: LegalDoc = {
               reservation fee in full.
             </li>
             <li>
-              Approved refunds are returned to the original payment method within [number] business days. Your bank
-              may take longer to show it.
+              Approved refunds are returned to the original payment method within [number] business days. Your bank may
+              take longer to show it.
             </li>
             <li>
               Because the fee is charged in US dollars, the amount shown by your bank may vary slightly with exchange
@@ -218,8 +225,7 @@ export const TERMS: LegalDoc = {
       body: (
         <p>
           We may update these terms, for example when the product launches. Changes apply from the &ldquo;Last
-          updated&rdquo; date above and do not affect reservations already confirmed, unless the law requires
-          otherwise.
+          updated&rdquo; date above and do not affect reservations already confirmed, unless the law requires otherwise.
         </p>
       ),
     },
