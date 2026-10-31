@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { UserRound } from 'lucide-react';
+import type { ConversationLang } from '../../data/svaraas';
 import { cn } from '../../lib/cn';
 import { SvaraaMark } from '../brand/SvaraaMark';
 import { Reveal } from '../ui/Reveal';
@@ -11,6 +12,8 @@ export interface DemoProps {
   isComplete: boolean;
   goTo: (beat: number) => void;
   togglePlayback: () => void;
+  /** Language of the conversation (chat bubbles and spoken prompts). Everything else stays in English. */
+  lang: ConversationLang;
 }
 
 export type MessageState = 'hidden' | 'typing' | 'shown';

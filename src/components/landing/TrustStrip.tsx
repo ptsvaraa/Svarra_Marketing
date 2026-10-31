@@ -74,8 +74,11 @@ export function TrustStrip() {
   return (
     <section aria-labelledby="trust-title" className="mx-auto max-w-[1320px] px-4 sm:px-6 lg:px-10">
       <div className="border-t border-line pt-8">
-        <h2 id="trust-title" className="text-sm text-muted">
-          Team brings experience from
+        <h2
+          id="trust-title"
+          className="mx-auto max-w-3xl text-center font-serif text-2xl leading-snug tracking-tight text-balance text-heading sm:text-[1.75rem]"
+        >
+          Core Team and Advisors <em className="text-accent">hail from</em>
         </h2>
         <div className="marquee-viewport no-scrollbar -mx-4 mt-6 overflow-hidden px-4 py-2 sm:mx-0 sm:px-0">
           <div className="marquee-track flex w-max">

@@ -3,15 +3,16 @@ import { useTheme } from '../../hooks/useTheme';
 import { SvaraaMark } from '../brand/SvaraaMark';
 
 const LINKS = [
-  { href: '#about', label: 'About Svaraa' },
-  { href: '#svaraas', label: 'The 7 Svaraas' },
-  { href: '#why', label: 'Why Svaraa' },
-  { href: '#product', label: 'Product' },
-  { href: '#team', label: 'Team' },
+  // Rooted at "/" so they also work from the pre-order page.
+  { href: '/#about', label: 'About Svaraa' },
+  { href: '/#svaraas', label: 'The 7 Svaraas' },
+  { href: '/#why', label: 'Why Svaraa' },
+  { href: '/#product', label: 'Product' },
+  { href: '/#team', label: 'Team' },
 ] as const;
 
-/** Set this once the pre-order page is live; until then the button is a visible placeholder that goes nowhere. */
-const PREORDER_HREF: string | undefined = undefined;
+/** Where the Pre-Order button goes. Set to undefined to show it as a placeholder that goes nowhere. */
+const PREORDER_HREF: string | undefined = '/pre-order';
 
 const preorderClass =
   'inline-flex h-10 items-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-medium whitespace-nowrap text-on-primary shadow-[0_10px_24px_-14px_var(--c-primary)] transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary';
@@ -28,7 +29,7 @@ export function Navbar() {
         aria-label="Primary"
         className="mx-auto flex max-w-[1320px] items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-10"
       >
-        <a href="#top" className="flex items-center gap-2.5 rounded-lg focus-visible:outline-2 focus-visible:outline-primary" aria-label="Svaraa home">
+        <a href="/#top" className="flex items-center gap-2.5 rounded-lg focus-visible:outline-2 focus-visible:outline-primary" aria-label="Svaraa home">
           <SvaraaMark className="size-9 text-primary dark:text-gold" />
           <span className="font-serif text-3xl leading-none text-heading dark:text-gold">svaraa</span>
         </a>

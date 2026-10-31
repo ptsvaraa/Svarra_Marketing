@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import type { LanguageCode, Svaraa } from '../../data/svaraas';
+import { conversationLang, type LanguageCode, type Svaraa } from '../../data/svaraas';
 import { useSimulation } from '../../hooks/useSimulation';
 import { useSpeech } from '../../hooks/useSpeech';
 import { DEMOS } from './demos';
@@ -9,8 +9,6 @@ import { SimulationControls } from './SimulationControls';
 
 interface SvaraaPanelProps {
   svaraa: Svaraa;
-  /** Whether the section has been scrolled into view; the demo auto-starts then. */
-  inView: boolean;
   audioOn: boolean;
   onAudioChange: (on: boolean) => void;
   language: LanguageCode;
@@ -21,12 +19,13 @@ interface SvaraaPanelProps {
  * One tab's content. It's keyed by tab id, so switching tabs remounts it and
  * the simulation always starts fresh.
  */
-export function SvaraaPanel({ svaraa, inView, audioOn, onAudioChange, language, onLanguageChange }: SvaraaPanelProps) {
-  const sim = useSimulation(svaraa.beatDurations, { autoStart: inView });
+export function SvaraaPanel({ svaraa, audioOn, onAudioChange, language, onLanguageChange }: SvaraaPanelProps) {
+  const sim = useSimulation(svaraa.beatDurations);
   const { supported, speak, cancel } = useSpeech(audioOn, language);
   const Demo = DEMOS[svaraa.id];
 
-  const line = sim.isPlaying ? svaraa.voiceLines[sim.beat] : undefined;
+  const lang = conversationLang(language);
+  const line = sim.isPlaying ? svaraa.voiceLines[lang][sim.beat] : undefined;
   useEffect(() => {
     if (line) speak(line);
   }, [line, sim.beat, sim.runId, speak]);
@@ -80,6 +79,7 @@ export function SvaraaPanel({ svaraa, inView, audioOn, onAudioChange, language, 
               isComplete={sim.isComplete}
               goTo={sim.goTo}
               togglePlayback={sim.toggle}
+              lang={lang}
             />
           </LiveDemoFrame>
         </div>

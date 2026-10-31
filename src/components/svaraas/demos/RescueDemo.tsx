@@ -18,6 +18,7 @@ import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
 import { LiveDot, Pill, type Tone } from '../../ui/Pill';
 import { SectionLabel, type DemoProps } from '../demo-kit';
+import type { ConversationLang } from '../../../data/svaraas';
 
 const COUNTDOWN = 5;
 
@@ -82,12 +83,20 @@ const TIMELINE = [
   { time: '10:37 AM', label: 'Lakshmi arrived · drill resolved', at: 3 },
 ] as const;
 
-const ASSISTANT_LINES = [
-  'Amma, are you okay? Say “I’m fine” to cancel.',
-  'Amma, your care circle has been alerted.',
-  'Priya has acknowledged. Lakshmi is on the way.',
-  'Glad you’re safe, Amma. I’ve let everyone know.',
-] as const;
+const ASSISTANT_LINES = {
+  en: [
+    'Amma, are you okay? Say “I’m fine” to cancel.',
+    'Amma, your care circle has been alerted.',
+    'Priya has acknowledged. Lakshmi is on the way.',
+    'Glad you’re safe, Amma. I’ve let everyone know.',
+  ],
+  hi: [
+    'अम्मा, आप ठीक हैं? ठीक हों, तो कहिए "मैं ठीक हूँ"।',
+    'मैंने आपके देखभाल-समूह को सूचना दे दी है।',
+    'प्रिया ने पुष्टि कर दी है। लक्ष्मी रास्ते में हैं।',
+    'अच्छा लगा कि आप सुरक्षित हैं, अम्मा। मैंने सबको बता दिया है।',
+  ],
+} as const satisfies Record<ConversationLang, readonly [string, string, string, string]>;
 
 /** Stylised neighbourhood map. Pure SVG, so it scales crisply and themes via CSS vars. */
 const HomeMap = memo(function HomeMap({ resolved }: { resolved: boolean }) {
@@ -142,11 +151,12 @@ const HomeMap = memo(function HomeMap({ resolved }: { resolved: boolean }) {
   );
 });
 
-export function RescueDemo({ beat, isPlaying, goTo }: DemoProps) {
+export function RescueDemo({ beat, isPlaying, goTo, lang }: DemoProps) {
   const resolved = beat >= 3;
   const elapsed = useElapsedSeconds(beat === 0 && isPlaying);
   const countdown = Math.max(0, COUNTDOWN - elapsed);
-  const assistantLine = ASSISTANT_LINES[Math.min(beat, ASSISTANT_LINES.length - 1)];
+  const lines = ASSISTANT_LINES[lang];
+  const assistantLine = lines[Math.min(beat, lines.length - 1)];
 
   return (
     <div className="flex flex-col gap-4">
@@ -230,7 +240,7 @@ export function RescueDemo({ beat, isPlaying, goTo }: DemoProps) {
             <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-ink/5 text-muted" aria-hidden="true">
               <AudioLines className="size-5" />
             </span>
-            <p className="min-h-[3.25rem] flex-1 rounded-2xl rounded-tl-md bg-ink/5 px-4 py-2.5 text-sm leading-relaxed text-ink" aria-live="polite">
+            <p className="min-h-[3.25rem] flex-1 rounded-2xl rounded-tl-md bg-ink/5 px-4 py-2.5 text-sm leading-relaxed text-ink" aria-live="polite" lang={lang}>
               {assistantLine}
             </p>
           </div>

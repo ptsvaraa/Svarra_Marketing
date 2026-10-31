@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Check, X, type LucideIcon } from 'lucide-react';
 import { cn } from '../../lib/cn';
+import { LotusDivider } from '../brand/LotusDivider';
 
 interface Column {
   id: string;
@@ -65,29 +66,34 @@ export function WhySvaraa() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.2 }}
           transition={{ duration: 0.6, ease: 'easeOut' }}
-          className="glass mt-12 grid overflow-hidden rounded-[28px] p-1.5 sm:mt-16 md:grid-cols-2 md:gap-1.5"
+          className="mx-auto mt-12 grid max-w-5xl gap-5 sm:mt-14 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:gap-6 lg:gap-8"
         >
-          {COLUMNS.map((col) => {
+          {COLUMNS.map((col, i) => {
             const tone = TONE[col.tone];
             const Icon = col.icon;
             return (
               <article
                 key={col.id}
                 aria-labelledby={`why-${col.id}`}
-                className={cn('rounded-[22px] px-6 py-10 sm:px-10 sm:py-12', tone.panel, col.tone === 'danger' && 'max-md:mb-1.5')}
+                className={cn(
+                  'rounded-[24px] border border-line px-6 py-8 shadow-[0_18px_40px_-30px_var(--c-shadow)] sm:px-8 sm:py-9',
+                  tone.panel,
+                  // The lotus divider takes the middle column on wide screens.
+                  i === 1 && 'md:col-start-3',
+                )}
               >
                 <div className="text-center">
-                  <span className={cn('mx-auto inline-flex size-16 items-center justify-center rounded-full', tone.tile)}>
-                    <Icon className="size-7" strokeWidth={2.25} aria-hidden="true" />
+                  <span className={cn('mx-auto inline-flex size-14 items-center justify-center rounded-full', tone.tile)}>
+                    <Icon className="size-6" strokeWidth={2.25} aria-hidden="true" />
                   </span>
-                  <h3 id={`why-${col.id}`} className={cn('mt-6 font-serif text-2xl text-balance sm:text-[1.75rem]', tone.text)}>
+                  <h3 id={`why-${col.id}`} className={cn('mt-5 font-serif text-2xl text-balance', tone.text)}>
                     {col.title}
                   </h3>
-                  <p className="mt-2 text-sm font-medium tracking-[0.14em] text-muted uppercase">{col.subtitle}</p>
+                  <p className="mt-1.5 text-xs font-medium tracking-[0.14em] text-muted uppercase">{col.subtitle}</p>
                 </div>
-                <ul className="mx-auto mt-10 max-w-lg space-y-5">
+                <ul className="mx-auto mt-7 max-w-md space-y-4">
                   {col.points.map((point) => (
-                    <li key={point} className="flex gap-4 text-[1.02rem] leading-relaxed text-ink">
+                    <li key={point} className="flex gap-3 text-[0.95rem] leading-relaxed text-ink">
                       <Icon className={cn('mt-1 size-5 shrink-0', tone.text)} strokeWidth={2.25} aria-hidden="true" />
                       <span>{point}</span>
                     </li>
@@ -96,6 +102,7 @@ export function WhySvaraa() {
               </article>
             );
           })}
+          <LotusDivider className="max-md:hidden md:col-start-2 md:row-start-1" />
         </motion.div>
       </div>
     </section>

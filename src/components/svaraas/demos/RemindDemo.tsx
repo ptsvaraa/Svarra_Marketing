@@ -16,6 +16,18 @@ import { Card } from '../../ui/Card';
 import { Pill, type Tone } from '../../ui/Pill';
 import { Reveal } from '../../ui/Reveal';
 import { ChatMessage, SectionLabel, type DemoProps } from '../demo-kit';
+import type { ConversationLang } from '../../../data/svaraas';
+
+const CHAT = {
+  en: {
+    prompt: 'Amma, it’s time for your scheduled medicine. Have some water, too.',
+    reply: 'I’ve taken it.',
+  },
+  hi: {
+    prompt: 'अम्मा, आपकी दवा का समय हो गया है। साथ में थोड़ा पानी भी पी लीजिए।',
+    reply: 'हाँ, ले ली है।',
+  },
+} as const satisfies Record<ConversationLang, Record<string, string>>;
 
 interface Row {
   time: string;
@@ -45,7 +57,8 @@ function reminders(beat: number, snoozed: boolean): Row[] {
   ];
 }
 
-export function RemindDemo({ beat, goTo }: DemoProps) {
+export function RemindDemo({ beat, goTo, lang }: DemoProps) {
+  const chat = CHAT[lang];
   const [snoozed, setSnoozed] = useState(false);
   const acknowledged = beat >= 2;
   const familyUpdated = beat >= 3;
@@ -86,7 +99,7 @@ export function RemindDemo({ beat, goTo }: DemoProps) {
             >
               <span className="flex items-start gap-3">
                 <AudioLines className="mt-0.5 size-5 shrink-0 text-accent" aria-hidden="true" />
-                <span>Amma, it&rsquo;s time for your scheduled medicine. Have some water, too.</span>
+                <span lang={lang}>{chat.prompt}</span>
               </span>
             </ChatMessage>
             <div className="flex flex-wrap gap-2 xl:mt-6 xl:flex-col">
@@ -108,7 +121,7 @@ export function RemindDemo({ beat, goTo }: DemoProps) {
             avatar={<MessageCircle className="size-5" />}
             state={acknowledged ? 'shown' : 'hidden'}
           >
-            I&rsquo;ve taken it.
+            <span lang={lang}>{chat.reply}</span>
           </ChatMessage>
 
           <Reveal show={acknowledged}>

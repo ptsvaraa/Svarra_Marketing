@@ -4,18 +4,28 @@ import { AudioLines, Brain, Check, ChevronRight, CircleCheck, Lightbulb } from '
 import { cn } from '../../../lib/cn';
 import { Card } from '../../ui/Card';
 import { Reveal } from '../../ui/Reveal';
+import type { ConversationLang } from '../../../data/svaraas';
 import type { DemoProps } from '../demo-kit';
 
 const OPTIONS = [7, 8, 10] as const;
 const ANSWER = 8;
 
-const PROMPTS = [
-  'Let’s begin with a gentle seated stretch. Raise your arms slowly, and breathe.',
-  'Well done. Now, shall we give your mind a little puzzle?',
-  'Well done. Now, shall we give your mind a little puzzle?',
-  'Lovely. Let’s take a quiet breathing moment.',
-  'That was a wonderful session, Amma.',
-] as const;
+const PROMPTS = {
+  en: [
+    'Let’s begin with a gentle seated stretch. Raise your arms slowly, and breathe.',
+    'Well done. Now, shall we give your mind a little puzzle?',
+    'Well done. Now, shall we give your mind a little puzzle?',
+    'Lovely. Let’s take a quiet breathing moment.',
+    'That was a wonderful session, Amma.',
+  ],
+  hi: [
+    'चलिए, बैठे-बैठे हल्के खिंचाव से शुरू करते हैं। धीरे-धीरे हाथ ऊपर उठाइए, और साँस लीजिए।',
+    'बहुत बढ़िया। अब दिमाग़ के लिए एक छोटी-सी पहेली हो जाए? दो, चार, छह, इसके बाद क्या आएगा?',
+    'बहुत बढ़िया। अब दिमाग़ के लिए एक छोटी-सी पहेली हो जाए? दो, चार, छह, इसके बाद क्या आएगा?',
+    'सुंदर। चलिए, थोड़ी देर शांति से साँस लेते हैं।',
+    'आज का अभ्यास बहुत अच्छा रहा, अम्मा।',
+  ],
+} as const satisfies Record<ConversationLang, readonly [string, string, string, string, string]>;
 
 type ActivityState = 'upcoming' | 'active' | 'done';
 
@@ -45,11 +55,12 @@ function Activity({ index, title, state }: { index: string; title: string; state
   );
 }
 
-export function RiddleDemo({ beat, isPlaying, isComplete, goTo }: DemoProps) {
+export function RiddleDemo({ beat, isPlaying, isComplete, goTo, lang }: DemoProps) {
   const [picked, setPicked] = useState<number | null>(null);
   const answered = beat >= 2;
   const breathing = beat === 3;
-  const prompt = PROMPTS[Math.min(beat, PROMPTS.length - 1)];
+  const prompts = PROMPTS[lang];
+  const prompt = prompts[Math.min(beat, prompts.length - 1)];
 
   const choose = (n: number) => {
     setPicked(n);
@@ -79,6 +90,7 @@ export function RiddleDemo({ beat, isPlaying, isComplete, goTo }: DemoProps) {
           <AnimatePresence mode="wait" initial={false}>
             <motion.p
               key={prompt}
+              lang={lang}
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}

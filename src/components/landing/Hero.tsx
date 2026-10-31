@@ -62,13 +62,14 @@ export function Hero({ selected, onSelect, onOpenDemo }: HeroProps) {
               <span className="grid">
                 {SVARAAS.map((s) => (
                   <span key={s.id} className={cn('col-start-1 row-start-1', s.id !== svaraa.id && 'invisible')}>
-                    Watch the {s.label} demo
+                    Watch the demo
                   </span>
                 ))}
               </span>
             </a>
           </div>
-          <p className="mt-6 text-sm text-subtle xl:absolute xl:top-full xl:left-0">
+          {/* Same offset as the photo caption, so the two lines share a baseline on wide screens. */}
+          <p className="mt-5 text-sm text-subtle xl:absolute xl:top-full xl:left-0">
             Thoughtfully designed. Currently in development.
           </p>
         </div>
@@ -115,8 +116,8 @@ export function Hero({ selected, onSelect, onOpenDemo }: HeroProps) {
             </div>
             {/* Caption sits under the photo. On wide screens it hangs below the column, like the note under the
                 buttons, so the photo still ends level with them. */}
-            <p className="mt-4 px-1 font-serif text-lg leading-snug text-heading italic sm:text-xl xl:absolute xl:top-full xl:right-0 xl:left-0">
-              <span className="mr-2 font-sans text-xs font-medium tracking-[0.2em] text-gold not-italic uppercase">
+            <p className="mt-5 px-1 text-sm text-heading xl:absolute xl:top-full xl:right-0 xl:left-0">
+              <span className="mr-2 font-medium tracking-[0.12em] text-gold uppercase">
                 {svaraa.ordinal} · {svaraa.label}
               </span>
               {svaraa.subheadline}

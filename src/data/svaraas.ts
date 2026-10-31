@@ -9,6 +9,9 @@ export type SvaraaId =
 
 type Four<T> = readonly [T, T, T, T];
 
+/** The language the demo conversation (chat and voice) is shown in. The rest of the demo stays in English. */
+export type ConversationLang = 'en' | 'hi';
+
 export interface Svaraa {
   id: SvaraaId;
   label: string;
@@ -40,8 +43,8 @@ export interface Svaraa {
   beatDurations: readonly number[];
   /** Which tracker step is active during each beat. Same length as `beatDurations`. */
   trackerByBeat: readonly number[];
-  /** What Svaraa says aloud when a beat starts (when audio is on). */
-  voiceLines: Readonly<Partial<Record<number, string>>>;
+  /** What Svaraa says aloud when a beat starts (when audio is on), per conversation language. */
+  voiceLines: Readonly<Record<ConversationLang, Readonly<Partial<Record<number, string>>>>>;
 }
 
 export const SVARAAS: readonly Svaraa[] = [
@@ -68,8 +71,14 @@ export const SVARAAS: readonly Svaraa[] = [
     beatDurations: [1800, 2400, 6500, 2800],
     trackerByBeat: [0, 1, 2, 3],
     voiceLines: {
-      1: "Of course, Amma. Let's begin with a quiet moment.",
-      3: "I've saved this as your morning routine. Your evening prayer is at six thirty.",
+      en: {
+        1: "Of course, Amma. Let's begin with a quiet moment.",
+        3: "I've saved this as your morning routine. Your evening prayer is at six thirty.",
+      },
+      hi: {
+        1: 'ज़रूर, अम्मा। आइए, एक शांत पल से शुरुआत करते हैं।',
+        3: 'मैंने इसे आपकी सुबह की दिनचर्या में सहेज लिया है। आपकी शाम की प्रार्थना साढ़े छह बजे है।',
+      },
     },
   },
   {
@@ -95,8 +104,14 @@ export const SVARAAS: readonly Svaraa[] = [
     beatDurations: [1800, 2800, 5200, 2800],
     trackerByBeat: [0, 1, 2, 3],
     voiceLines: {
-      1: 'Shall I add a reminder for 9 a.m.?',
-      3: "Done. I'll remind you to call Priya.",
+      en: {
+        1: 'Shall I add a reminder for 9 a.m.?',
+        3: "Done. I'll remind you to call Priya.",
+      },
+      hi: {
+        1: 'क्या मैं सुबह नौ बजे की याद जोड़ दूँ?',
+        3: 'हो गया। मैं आपको प्रिया को फ़ोन करने की याद दिला दूँगी।',
+      },
     },
   },
   {
@@ -122,8 +137,14 @@ export const SVARAAS: readonly Svaraa[] = [
     beatDurations: [2000, 4200, 2600, 2800],
     trackerByBeat: [0, 1, 2, 3],
     voiceLines: {
-      1: "Amma, it's time for your scheduled medicine. Have some water, too.",
-      2: 'Thank you, Amma. I have noted it.',
+      en: {
+        1: "Amma, it's time for your scheduled medicine. Have some water, too.",
+        2: 'Thank you, Amma. I have noted it.',
+      },
+      hi: {
+        1: 'अम्मा, आपकी दवा का समय हो गया है। साथ में थोड़ा पानी भी पी लीजिए।',
+        2: 'धन्यवाद, अम्मा। मैंने लिख लिया है।',
+      },
     },
   },
   {
@@ -153,10 +174,18 @@ export const SVARAAS: readonly Svaraa[] = [
     beatDurations: [5000, 2800, 3600, 2800],
     trackerByBeat: [0, 1, 2, 3],
     voiceLines: {
-      0: "Amma, are you okay? I'll alert your care circle in a few seconds.",
-      1: "I've alerted your care circle.",
-      2: 'Priya has acknowledged. Lakshmi is on the way.',
-      3: "Glad you're safe, Amma. I've let everyone know.",
+      en: {
+        0: "Amma, are you okay? I'll alert your care circle in a few seconds.",
+        1: "I've alerted your care circle.",
+        2: 'Priya has acknowledged. Lakshmi is on the way.',
+        3: "Glad you're safe, Amma. I've let everyone know.",
+      },
+      hi: {
+        0: 'अम्मा, आप ठीक हैं? ठीक हों, तो कहिए "मैं ठीक हूँ"।',
+        1: 'मैंने आपके देखभाल-समूह को सूचना दे दी है।',
+        2: 'प्रिया ने पुष्टि कर दी है। लक्ष्मी रास्ते में हैं।',
+        3: 'अच्छा लगा कि आप सुरक्षित हैं, अम्मा। मैंने सबको बता दिया है।',
+      },
     },
   },
   {
@@ -182,9 +211,16 @@ export const SVARAAS: readonly Svaraa[] = [
     beatDurations: [1800, 5600, 2800, 5200, 2600],
     trackerByBeat: [0, 1, 2, 3, 3],
     voiceLines: {
-      1: 'Your morning briefing is ready. Shall we go through your plans?',
-      2: 'Today you have a call with Priya at nine, a garden walk at eleven, and a family catch-up at five.',
-      3: 'Shall I add picking up the scan report from Doctor Menon’s clinic?',
+      en: {
+        1: 'Your morning briefing is ready. Shall we go through your plans?',
+        2: 'Today you have a call with Priya at nine, a garden walk at eleven, and a family catch-up at five.',
+        3: 'Shall I add picking up the scan report from Doctor Menon’s clinic?',
+      },
+      hi: {
+        1: 'आपका सुबह का समाचार-सार तैयार है। क्या हम आपकी आज की योजनाएँ देख लें?',
+        2: 'आज नौ बजे प्रिया से बात करनी है, ग्यारह बजे बगीचे में सैर है, और पाँच बजे परिवार के साथ बातचीत है।',
+        3: 'क्या मैं डॉ. मेनन के यहाँ से जाँच की रिपोर्ट लाने का काम भी जोड़ दूँ?',
+      },
     },
   },
   {
@@ -210,9 +246,16 @@ export const SVARAAS: readonly Svaraa[] = [
     beatDurations: [1800, 2800, 4400, 5200, 2600],
     trackerByBeat: [0, 0, 1, 2, 3],
     voiceLines: {
-      1: "With your permission, I'll keep the story and its key moments.",
-      3: "Here's a short summary. Would you like to save it?",
-      4: 'Saved to your repository.',
+      en: {
+        1: "With your permission, I'll keep the story and its key moments.",
+        3: "Here's a short summary. Would you like to save it?",
+        4: 'Saved to your repository.',
+      },
+      hi: {
+        1: 'आपकी अनुमति से, मैं यह कहानी और इसके ख़ास पल सहेज लूँगी।',
+        3: 'यह रहा एक छोटा-सा सार। क्या आप इसे सहेजना चाहेंगे?',
+        4: 'आपके संग्रह में सहेज लिया गया है।',
+      },
     },
   },
   {
@@ -238,18 +281,29 @@ export const SVARAAS: readonly Svaraa[] = [
     beatDurations: [3400, 6500, 2600, 4600, 2600],
     trackerByBeat: [0, 1, 1, 2, 3],
     voiceLines: {
-      0: "Let's begin with a gentle seated stretch. Raise your arms slowly, and breathe.",
-      1: 'Well done. Now, shall we give your mind a little puzzle? What comes next: two, four, six?',
-      3: "Lovely. Let's take a quiet breathing moment.",
-      4: 'That was a wonderful session, Amma.',
+      en: {
+        0: "Let's begin with a gentle seated stretch. Raise your arms slowly, and breathe.",
+        1: 'Well done. Now, shall we give your mind a little puzzle? What comes next: two, four, six?',
+        3: "Lovely. Let's take a quiet breathing moment.",
+        4: 'That was a wonderful session, Amma.',
+      },
+      hi: {
+        0: 'चलिए, बैठे-बैठे हल्के खिंचाव से शुरू करते हैं। धीरे-धीरे हाथ ऊपर उठाइए, और साँस लीजिए।',
+        1: 'बहुत बढ़िया। अब दिमाग़ के लिए एक छोटी-सी पहेली हो जाए? दो, चार, छह, इसके बाद क्या आएगा?',
+        3: 'सुंदर। चलिए, थोड़ी देर शांति से साँस लेते हैं।',
+        4: 'आज का अभ्यास बहुत अच्छा रहा, अम्मा।',
+      },
     },
   },
 ];
 
 export const LANGUAGES = [
+  { value: 'hi-IN', label: 'हिन्दी (Hindi)' },
+  { value: 'en-IN', label: 'English (India)' },
   { value: 'en-US', label: 'English (US)' },
   { value: 'en-GB', label: 'English (UK)' },
-  { value: 'en-IN', label: 'English (India)' },
 ] as const;
 
 export type LanguageCode = (typeof LANGUAGES)[number]['value'];
+
+export const conversationLang = (code: LanguageCode): ConversationLang => (code.startsWith('hi') ? 'hi' : 'en');

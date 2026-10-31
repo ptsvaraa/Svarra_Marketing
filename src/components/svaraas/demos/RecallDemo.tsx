@@ -21,9 +21,21 @@ import { Card } from '../../ui/Card';
 import { Pill } from '../../ui/Pill';
 import { Reveal } from '../../ui/Reveal';
 import { Waveform } from '../../ui/Waveform';
+import type { ConversationLang } from '../../../data/svaraas';
 import { ChatMessage, SectionLabel, replyState, type DemoProps } from '../demo-kit';
 
 const BRIEFING_LENGTH = 90;
+
+const CHAT = {
+  en: {
+    request: 'Svaraa, what does today look like?',
+    reply: 'Your morning briefing is ready. Shall we go through your plans?',
+  },
+  hi: {
+    request: 'स्वरा, आज क्या-क्या करना है?',
+    reply: 'आपका सुबह का समाचार-सार तैयार है। क्या हम आपकी आज की योजनाएँ देख लें?',
+  },
+} as const satisfies Record<ConversationLang, Record<string, string>>;
 
 const PLAN = [
   { time: '9:00 am', title: 'Call Priya', Icon: Phone },
@@ -33,7 +45,8 @@ const PLAN = [
 
 type Decision = 'pending' | 'confirmed' | 'declined';
 
-export function RecallDemo({ beat, isPlaying, isComplete, goTo, togglePlayback }: DemoProps) {
+export function RecallDemo({ beat, isPlaying, isComplete, goTo, togglePlayback, lang }: DemoProps) {
+  const chat = CHAT[lang];
   const [decision, setDecision] = useState<Decision>('pending');
   const [readAloud, setReadAloud] = useState(true);
 
@@ -53,10 +66,10 @@ export function RecallDemo({ beat, isPlaying, isComplete, goTo, togglePlayback }
   return (
     <div className="flex flex-col gap-4">
       <ChatMessage speaker="person" name="Amma" time="10:32 AM">
-        Svaraa, what does today look like?
+        {chat.request}
       </ChatMessage>
       <ChatMessage speaker="svaraa" name="Svaraa AI" time="10:32 AM" state={replyState(beat, 1, isPlaying)}>
-        Your morning briefing is ready. Shall we go through your plans?
+        {chat.reply}
       </ChatMessage>
 
       <Reveal show={beat >= 1}>

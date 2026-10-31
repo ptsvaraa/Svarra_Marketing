@@ -1,5 +1,6 @@
-import { Instagram, Linkedin, Mail, Youtube, type LucideIcon } from 'lucide-react';
+import { Facebook, Instagram, Linkedin, Mail, type LucideIcon } from 'lucide-react';
 import { cn } from '../../lib/cn';
+import { LEGAL_PATHS } from '../../legal/company';
 import { SvaraaMark } from '../brand/SvaraaMark';
 
 interface FooterLink {
@@ -21,11 +22,11 @@ const COLUMNS: readonly { title: string; links: readonly FooterLink[] }[] = [
   {
     title: 'Explore',
     links: [
-      { label: 'About Svaraa', href: '#about' },
-      { label: 'The 7 Svaraas', href: '#svaraas' },
-      { label: 'Why Svaraa', href: '#why' },
-      { label: 'Svaraa Lite in 3D', href: '#product' },
-      { label: 'Team', href: '#team' },
+      { label: 'About Svaraa', href: '/#about' },
+      { label: 'The 7 Svaraas', href: '/#svaraas' },
+      { label: 'Why Svaraa', href: '/#why' },
+      { label: 'Svaraa Fold in 3D', href: '/#product' },
+      { label: 'Team', href: '/#team' },
     ],
   },
   {
@@ -34,14 +35,18 @@ const COLUMNS: readonly { title: string; links: readonly FooterLink[] }[] = [
   },
   {
     title: 'Legal',
-    links: [{ label: 'Privacy Policy' }, { label: 'Terms & Conditions' }, { label: 'Cookie Policy' }],
+    links: [
+      { label: 'Privacy Policy', href: LEGAL_PATHS.privacy },
+      { label: 'Terms & Conditions', href: LEGAL_PATHS.terms },
+      { label: 'Cookie Policy', href: LEGAL_PATHS.cookies },
+    ],
   },
 ];
 
 const SOCIALS: readonly SocialLink[] = [
-  { label: 'Instagram', icon: Instagram },
-  { label: 'LinkedIn', icon: Linkedin },
-  { label: 'YouTube', icon: Youtube },
+  { label: 'Instagram', icon: Instagram, href: 'https://www.instagram.com/svaraa.ai/' },
+  { label: 'LinkedIn', icon: Linkedin, href: 'https://www.linkedin.com/company/svaraa/' },
+  { label: 'Facebook', icon: Facebook, href: 'https://www.facebook.com/share/1JG3REgpqM/' },
 ];
 
 const LEGAL_SHORTCUTS = ['Privacy Policy', 'Terms & Conditions'] as const;
@@ -79,7 +84,7 @@ export function Footer() {
         <div className="grid gap-12 py-14 sm:py-16 lg:grid-cols-[minmax(0,1.3fr)_repeat(3,minmax(0,1fr))] lg:gap-10">
           <div className="max-w-sm">
             <a
-              href="#top"
+              href="/#top"
               className="inline-flex items-center gap-2.5 rounded-lg focus-visible:outline-2 focus-visible:outline-primary"
               aria-label="Svaraa home"
             >

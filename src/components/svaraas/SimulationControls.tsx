@@ -60,12 +60,13 @@ export function SimulationControls({
         )}
       </div>
 
-      <div className="mt-6 grid grid-cols-3 gap-2.5">
+      {/* Start is the main action, so it gets the full row; Pause and Reset share the row below. */}
+      <div className="mt-6 grid grid-cols-2 gap-2.5">
         <Button
           variant={sim.isPlaying ? 'muted' : 'primary'}
           onClick={sim.play}
           disabled={sim.isPlaying}
-          className="px-2"
+          className="col-span-2"
         >
           <Play className="size-4" aria-hidden="true" />
           {startLabel}
@@ -74,12 +75,11 @@ export function SimulationControls({
           variant={sim.isPlaying ? 'primary' : 'muted'}
           onClick={sim.pause}
           disabled={!sim.isPlaying}
-          className="px-2"
         >
           <Pause className="size-4" aria-hidden="true" />
           Pause
         </Button>
-        <Button variant="outline" onClick={sim.reset} disabled={status === 'idle' && sim.beat === 0} className="px-2">
+        <Button variant="outline" onClick={sim.reset} disabled={status === 'idle' && sim.beat === 0}>
           <RotateCcw className="size-4" aria-hidden="true" />
           Reset
         </Button>
@@ -92,7 +92,7 @@ export function SimulationControls({
           aria-checked={audioOn}
           onClick={() => onAudioChange(!audioOn)}
           disabled={!speechSupported}
-          title={speechSupported ? undefined : 'Voice playback is not supported in this browser'}
+          title={speechSupported ? undefined : 'This browser has no voice for the selected language'}
           className="group flex items-center gap-2.5 rounded-full text-sm text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary disabled:opacity-50"
         >
           {audioOn ? <Volume2 className="size-5 text-gold" aria-hidden="true" /> : <VolumeX className="size-5 text-subtle" aria-hidden="true" />}

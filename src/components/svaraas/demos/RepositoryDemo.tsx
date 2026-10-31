@@ -7,13 +7,28 @@ import { Card, IconTile } from '../../ui/Card';
 import { LiveDot, Pill } from '../../ui/Pill';
 import { Reveal } from '../../ui/Reveal';
 import { Waveform } from '../../ui/Waveform';
+import type { ConversationLang } from '../../../data/svaraas';
 import { ChatMessage, replyState, type DemoProps } from '../demo-kit';
 
 const STORY_LENGTH = 312;
 
+const CHAT = {
+  en: {
+    request: 'Svaraa, save the story about our first home.',
+    reply: 'With your permission, I’ll keep the story and its key moments.',
+    transcript: 'We planted that first jasmine together. It was a small house, but it felt like a palace…',
+  },
+  hi: {
+    request: 'स्वरा, हमारे पहले घर वाली कहानी सहेज लो।',
+    reply: 'आपकी अनुमति से, मैं यह कहानी और इसके ख़ास पल सहेज लूँगी।',
+    transcript: 'वह पहली चमेली हमने साथ मिलकर लगाई थी। घर छोटा था, पर महल जैसा लगता था…',
+  },
+} as const satisfies Record<ConversationLang, Record<string, string>>;
+
 const TAKEAWAYS = ['A new beginning in Chennai', 'The garden Amma planted', 'Sunday mornings on the verandah'] as const;
 
-export function RepositoryDemo({ beat, isPlaying, goTo }: DemoProps) {
+export function RepositoryDemo({ beat, isPlaying, goTo, lang }: DemoProps) {
+  const chat = CHAT[lang];
   const [reviewed, setReviewed] = useState(false);
   const capturing = beat === 2;
   const saved = beat >= 4;
@@ -31,10 +46,10 @@ export function RepositoryDemo({ beat, isPlaying, goTo }: DemoProps) {
       </Reveal>
 
       <ChatMessage speaker="person" name="Appa" time="10:14 AM" avatar={<Mic className="size-5 text-accent" />}>
-        Svaraa, save the story about our first home.
+        {chat.request}
       </ChatMessage>
       <ChatMessage speaker="svaraa" name="Svaraa AI" time="10:14 AM" state={replyState(beat, 1, isPlaying)}>
-        With your permission, I&rsquo;ll keep the story and its key moments.
+        {chat.reply}
       </ChatMessage>
 
       <Reveal show={beat >= 2}>
@@ -76,9 +91,9 @@ export function RepositoryDemo({ beat, isPlaying, goTo }: DemoProps) {
               </div>
               <figure>
                 <figcaption className="mb-2 text-sm font-semibold text-heading">Transcript excerpt</figcaption>
-                <blockquote className="flex gap-2 rounded-xl bg-ink/5 p-3 font-serif text-[0.95rem] italic leading-relaxed text-ink">
+                <blockquote lang={lang} className="flex gap-2 rounded-xl bg-ink/5 p-3 font-serif text-[0.95rem] italic leading-relaxed text-ink">
                   <Quote className="size-4 shrink-0 text-gold" aria-hidden="true" />
-                  We planted that first jasmine together. It was a small house, but it felt like a palace…
+                  {chat.transcript}
                 </blockquote>
               </figure>
             </div>

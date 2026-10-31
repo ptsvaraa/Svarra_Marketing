@@ -48,11 +48,6 @@ function reducer(state: SimState, action: SimAction): SimState {
   }
 }
 
-interface Options {
-  /** Start playing automatically the first time this becomes true. */
-  autoStart: boolean;
-}
-
 export interface Simulation {
   beat: number;
   status: SimStatus;
@@ -70,15 +65,15 @@ export interface Simulation {
 /**
  * A pausable, timer-driven script of beats. Pausing remembers how much of the
  * current beat was left, so resuming continues rather than restarting it.
+ * It never starts by itself: it waits in `idle` until `play` is called.
  */
-export function useSimulation(durations: readonly number[], { autoStart }: Options): Simulation {
+export function useSimulation(durations: readonly number[]): Simulation {
   const total = durations.length;
   const [state, dispatch] = useReducer(reducer, INITIAL);
   const { beat, status, runId } = state;
 
   const timing = useRef<{ startedAt: number; duration: number } | null>(null);
   const remaining = useRef<number | null>(null);
-  const autoStarted = useRef(false);
 
   useEffect(() => {
     if (status !== 'playing' || beat >= total) return;
@@ -88,12 +83,6 @@ export function useSimulation(durations: readonly number[], { autoStart }: Optio
     const id = window.setTimeout(() => dispatch({ type: 'advance', from: beat, total }), duration);
     return () => window.clearTimeout(id);
   }, [status, beat, runId, total, durations]);
-
-  useEffect(() => {
-    if (!autoStart || autoStarted.current) return;
-    autoStarted.current = true;
-    dispatch({ type: 'play' });
-  }, [autoStart]);
 
   const play = useCallback(() => dispatch({ type: 'play' }), []);
 

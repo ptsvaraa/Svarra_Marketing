@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react';
-import { AnimatePresence, motion, useInView } from 'framer-motion';
+import { useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { SVARAAS, type LanguageCode, type SvaraaId } from '../../data/svaraas';
 import { SvaraaPanel } from './SvaraaPanel';
 import { SvaraaTabs, tabId } from './SvaraaTabs';
@@ -14,19 +14,16 @@ interface SvaraasSectionProps {
   onSelect: (id: SvaraaId) => void;
 }
 
-/** "The 7 Svaraas": a tabbed, self-running live demo of each capability. */
+/** "The 7 Svaraas": a tabbed live demo of each capability; each one plays when the visitor presses Start. */
 export function SvaraasSection({ selected, onSelect }: SvaraasSectionProps) {
   // Preferences persist across tabs, so they live here rather than in each panel.
   const [audioOn, setAudioOn] = useState(true);
-  const [language, setLanguage] = useState<LanguageCode>('en-US');
-
-  const sectionRef = useRef<HTMLElement>(null);
-  const inView = useInView(sectionRef, { once: true, amount: 0.25 });
+  const [language, setLanguage] = useState<LanguageCode>('hi-IN');
 
   const svaraa = SVARAAS.find((s) => s.id === selected) ?? SVARAAS[0]!;
 
   return (
-    <section ref={sectionRef} id="svaraas" aria-labelledby="svaraas-title" className="scroll-mt-6 py-16 sm:py-24">
+    <section id="svaraas" aria-labelledby="svaraas-title" className="scroll-mt-6 py-16 sm:py-24">
       <div className="mx-auto max-w-[1320px] px-4 sm:px-6 lg:px-10">
         <div className="mb-8 text-center sm:mb-10">
           <p className="text-xs font-medium tracking-[0.3em] text-gold uppercase">Live demo</p>
@@ -59,7 +56,6 @@ export function SvaraasSection({ selected, onSelect }: SvaraasSectionProps) {
             >
               <SvaraaPanel
                 svaraa={svaraa}
-                inView={inView}
                 audioOn={audioOn}
                 onAudioChange={setAudioOn}
                 language={language}

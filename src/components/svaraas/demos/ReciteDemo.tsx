@@ -7,6 +7,18 @@ import { Pill } from '../../ui/Pill';
 import { Reveal } from '../../ui/Reveal';
 import { Waveform } from '../../ui/Waveform';
 import { ChatMessage, replyState, type DemoProps } from '../demo-kit';
+import type { ConversationLang } from '../../../data/svaraas';
+
+const CHAT = {
+  en: {
+    request: 'Svaraa, play my morning prayer.',
+    reply: 'Of course, Amma. Let’s begin with a quiet moment.',
+  },
+  hi: {
+    request: 'स्वरा, मेरी सुबह की प्रार्थना लगा दो।',
+    reply: 'ज़रूर, अम्मा। आइए, एक शांत पल से शुरुआत करते हैं।',
+  },
+} as const satisfies Record<ConversationLang, Record<string, string>>;
 
 const TRACKS = {
   prayer: { title: 'Morning prayer', length: 360, start: 84 },
@@ -17,7 +29,8 @@ type TrackKey = keyof typeof TRACKS;
 
 const SKIP = 15;
 
-export function ReciteDemo({ beat, isPlaying, isComplete, togglePlayback }: DemoProps) {
+export function ReciteDemo({ beat, isPlaying, isComplete, togglePlayback, lang }: DemoProps) {
+  const chat = CHAT[lang];
   const [trackKey, setTrackKey] = useState<TrackKey>('prayer');
   const [offset, setOffset] = useState(0);
   const [volume, setVolume] = useState(70);
@@ -36,10 +49,10 @@ export function ReciteDemo({ beat, isPlaying, isComplete, togglePlayback }: Demo
   return (
     <div className="flex flex-col gap-4">
       <ChatMessage speaker="person" name="Amma" time="6:00 am">
-        Svaraa, play my morning prayer.
+        <span lang={lang}>{chat.request}</span>
       </ChatMessage>
       <ChatMessage speaker="svaraa" name="Svaraa AI" time="6:00 am" state={replyState(beat, 1, isPlaying)}>
-        Of course, Amma. Let&rsquo;s begin with a quiet moment.
+        <span lang={lang}>{chat.reply}</span>
       </ChatMessage>
 
       <Reveal show={beat >= 2}>

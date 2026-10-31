@@ -6,10 +6,23 @@ import { Pill } from '../../ui/Pill';
 import { Reveal } from '../../ui/Reveal';
 import { Waveform } from '../../ui/Waveform';
 import { ChatMessage, replyState, type DemoProps } from '../demo-kit';
+import type { ConversationLang } from '../../../data/svaraas';
+
+const CHAT = {
+  en: {
+    request: 'Svaraa, remind me to call Priya after our walk.',
+    reply: 'Shall I add a reminder for 9:00 am?',
+  },
+  hi: {
+    request: 'स्वरा, टहलने के बाद मुझे प्रिया को फ़ोन करने की याद दिला देना।',
+    reply: 'क्या मैं सुबह नौ बजे की याद जोड़ दूँ?',
+  },
+} as const satisfies Record<ConversationLang, Record<string, string>>;
 
 const TIMES = ['9:00 am', '9:30 am', '10:00 am'] as const;
 
-export function RespondDemo({ beat, isPlaying, goTo }: DemoProps) {
+export function RespondDemo({ beat, isPlaying, goTo, lang }: DemoProps) {
+  const chat = CHAT[lang];
   const [timeIndex, setTimeIndex] = useState(0);
   const confirmed = beat >= 3;
   const speaking = beat === 1 && isPlaying;
@@ -22,7 +35,7 @@ export function RespondDemo({ beat, isPlaying, goTo }: DemoProps) {
         time="7:30 am"
         avatar={<CalendarDays className="size-5" />}
       >
-        Svaraa, remind me to call Priya after our walk.
+        <span lang={lang}>{chat.request}</span>
       </ChatMessage>
 
       <ChatMessage
@@ -32,7 +45,7 @@ export function RespondDemo({ beat, isPlaying, goTo }: DemoProps) {
         status={speaking ? 'Speaking…' : undefined}
         state={replyState(beat, 1, isPlaying)}
       >
-        <span className="block">Shall I add a reminder for 9:00 am?</span>
+        <span className="block" lang={lang}>{chat.reply}</span>
         <Waveform bars={26} active={speaking} className="mt-2 h-6" seed={2.2} />
       </ChatMessage>
 
