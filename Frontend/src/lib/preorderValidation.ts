@@ -1,9 +1,9 @@
 /**
- * Pre-order details and their validation. Kept free of browser-only code so the
- * Stripe server function (api/) runs exactly the same checks before charging.
+ * Pre-order details and their validation, shown in the form as the buyer types.
+ * The backend runs the same checks before charging (Backend/src/shared/preorderValidation.ts);
+ * keep the two in step.
  */
-// `.js` extension: this file also runs as native ESM in the Vercel server functions.
-import { INDIAN_STATES, quantityRange, type BuyerType } from '../data/preorder.js';
+import { INDIAN_STATES, quantityRange, type BuyerType } from '../data/preorder';
 
 export interface PreorderDetails {
   buyerType: BuyerType;

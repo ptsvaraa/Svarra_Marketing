@@ -1,20 +1,26 @@
 /**
  * Browser side of the pre-order flow. Payment is taken on Stripe Checkout:
- * the server function in api/ creates the session, so the secret key never
+ * the backend (Backend/) creates the session, so the secret key never
  * reaches the browser.
  */
 import type { PreorderDetails } from './preorderValidation';
 
 export { normalisePhone, validatePreorder, type PreorderDetails, type PreorderErrors } from './preorderValidation';
 
-/** Thrown when Stripe isn't connected yet (no keys, or no server functions running). */
+/**
+ * Where the backend API lives, e.g. https://api.svaraa.ai. Empty means the same
+ * origin as this page: in development, Vite forwards /api to the local backend.
+ */
+const API_URL = (import.meta.env.VITE_API_URL ?? '').replace(/\/+$/, '');
+
+/** Thrown when Stripe isn't connected yet (no keys, or the backend isn't running). */
 export class PreorderUnavailableError extends Error {}
 
 /** Creates a Stripe Checkout session for the reservation and returns its payment page URL. */
 export async function startCheckout(details: PreorderDetails): Promise<string> {
   let res: Response;
   try {
-    res = await fetch('/api/create-checkout-session', {
+    res = await fetch(`${API_URL}/api/create-checkout-session`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify(details),
@@ -22,7 +28,7 @@ export async function startCheckout(details: PreorderDetails): Promise<string> {
   } catch {
     throw new Error('Network error');
   }
-  // 503: keys not set yet. 404/405: the API isn't running (e.g. plain `vite` dev server).
+  // 503: keys not set yet. 404/405: no API at that address.
   if (res.status === 503 || res.status === 404 || res.status === 405) {
     throw new PreorderUnavailableError(`Checkout unavailable (${res.status})`);
   }
@@ -40,7 +46,7 @@ export interface CheckoutResult {
 
 /** Confirms with Stripe (via our server) that a returning session was actually paid. */
 export async function fetchCheckoutResult(sessionId: string): Promise<CheckoutResult> {
-  const res = await fetch(`/api/checkout-session?session_id=${encodeURIComponent(sessionId)}`, {
+  const res = await fetch(`${API_URL}/api/checkout-session?session_id=${encodeURIComponent(sessionId)}`, {
     headers: { Accept: 'application/json' },
   });
   if (!res.ok) throw new Error(`Could not confirm payment (${res.status})`);

@@ -3,9 +3,10 @@
  * Confirms with Stripe whether a returning customer actually paid, so the
  * success screen is never shown on the strength of a URL alone.
  */
-import { getStripe, json } from './_stripe.js';
+import { getStripe } from '../services/stripe.js';
+import { json } from '../utils/http.js';
 
-export async function GET(request: Request): Promise<Response> {
+export async function getCheckoutSession(request: Request): Promise<Response> {
   const stripe = getStripe();
   if (!stripe) return json({ error: 'Payments are not configured.' }, 503);
 

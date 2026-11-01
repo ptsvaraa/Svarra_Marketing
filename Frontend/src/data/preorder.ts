@@ -1,3 +1,9 @@
+/*
+ * Pre-order rules and copy for the page and form. The backend enforces the same
+ * quantity limits and fees before charging (Backend/src/shared/preorder.ts); if
+ * you change one there, change it here too.
+ */
+
 /** Indian states and union territories, for the delivery address. */
 export const INDIAN_STATES = [
   'Andaman and Nicobar Islands',
