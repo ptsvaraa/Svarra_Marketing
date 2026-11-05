@@ -1,5 +1,6 @@
 import { ArrowRight, Moon, Sun } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
+import { PREORDER_OPEN } from '../../data/preorder';
 import { SvaraaMark } from '../brand/SvaraaMark';
 
 const LINKS = [
@@ -8,6 +9,7 @@ const LINKS = [
   { href: '/#svaraas', label: 'The 7 Svaraas' },
   { href: '/#why', label: 'Why Svaraa' },
   { href: '/#product', label: 'Product' },
+  { href: '/#pricing', label: 'Pricing' },
   { href: '/#team', label: 'Team' },
 ] as const;
 
@@ -46,7 +48,7 @@ export function Navbar() {
               </li>
             ))}
           </ul>
-          {PREORDER_HREF ? (
+          {!PREORDER_OPEN ? null : PREORDER_HREF ? (
             <a href={PREORDER_HREF} className={preorderClass}>
               Pre-Order
               <ArrowRight className="size-4" aria-hidden="true" />

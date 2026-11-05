@@ -60,8 +60,8 @@ function ProfileCard({ member, className }: { member: TeamMember; className?: st
 export function MeetTheTeam() {
   return (
     <section id="team" aria-labelledby="team-title" className="scroll-mt-6 px-4 pt-20 pb-16 sm:px-6 sm:pt-28 lg:px-10">
-      <div className="mx-auto max-w-5xl">
-        <header className="text-center">
+      <div className="mx-auto max-w-[1320px]">
+        <header className="mx-auto max-w-5xl text-center">
           <p className="text-xs font-medium tracking-[0.32em] text-gold uppercase">Meet the team</p>
           <h2
             id="team-title"

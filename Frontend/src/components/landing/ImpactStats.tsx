@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, useInView, useReducedMotion } from 'framer-motion';
 import { ArrowRight, BellRing, Heart, ShieldCheck, Volume2, type LucideIcon } from 'lucide-react';
+import { PREORDER_OPEN } from '../../data/preorder';
 import { IMPACT_IS_PLACEHOLDER, IMPACT_METRICS, type ImpactMetric } from '../../data/impact';
 import { SvaraaMark } from '../brand/SvaraaMark';
 
@@ -69,13 +70,15 @@ export function ImpactStats() {
               We studied how older adults and the families who care for them manage health, safety and connection every
               day. Here is where Svaraa makes the biggest difference.
             </p>
-            <a
-              href="/pre-order"
-              className="mt-7 inline-flex h-12 items-center gap-2.5 rounded-xl bg-[#e2bd72] px-6 font-medium text-[#2c0a1d] shadow-[0_14px_30px_-14px_rgba(226,189,114,0.7)] transition-colors hover:bg-[#ecca85] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#e2bd72]"
-            >
-              Pre-order Svaraa Fold
-              <ArrowRight className="size-4" aria-hidden="true" />
-            </a>
+            {PREORDER_OPEN && (
+              <a
+                href="/pre-order"
+                className="mt-7 inline-flex h-12 items-center gap-2.5 rounded-xl bg-[#e2bd72] px-6 font-medium text-[#2c0a1d] shadow-[0_14px_30px_-14px_rgba(226,189,114,0.7)] transition-colors hover:bg-[#ecca85] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#e2bd72]"
+              >
+                Pre-order Svaraa Fold
+                <ArrowRight className="size-4" aria-hidden="true" />
+              </a>
+            )}
             {IMPACT_IS_PLACEHOLDER && (
               <p className="mt-5 text-xs text-[#fbf7f2]/45">
                 Figures shown are placeholders until our market research report is published.

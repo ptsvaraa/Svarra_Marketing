@@ -31,10 +31,10 @@ export function Hero({ selected, onSelect, onOpenDemo }: HeroProps) {
           <p className="text-xs font-medium tracking-[0.32em] text-gold uppercase">Introducing Svaraa</p>
           <h1
             id="hero-title"
-            className="mt-6 font-serif text-5xl leading-[1.05] tracking-tight text-heading sm:text-6xl lg:text-7xl"
+            className="mt-4 font-serif text-4xl leading-[1.05] tracking-tight text-heading sm:text-4xl lg:text-6xl"
           >
-            Care, in harmony.
-            <em className="block text-accent">Life, on their terms.</em>
+              Your Everyday AI
+            <em className="block text-accent">Congnative Companion</em>
           </h1>
           <p className="mt-8 max-w-xl text-lg leading-relaxed text-muted">
             An AI-powered, voice-first wearable platform for older adults and those who care for them.

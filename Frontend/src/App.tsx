@@ -3,6 +3,7 @@ import { MotionConfig } from 'framer-motion';
 import type { SvaraaId } from './data/svaraas';
 import { Hero } from './components/landing/Hero';
 import { ImpactStats } from './components/landing/ImpactStats';
+import { Pricing } from './components/landing/Pricing';
 import { MeetTheTeam } from './components/landing/MeetTheTeam';
 import { SvaraaCards } from './components/landing/SvaraaCards';
 import { TrustStrip } from './components/landing/TrustStrip';
@@ -11,7 +12,9 @@ import { Footer } from './components/layout/Footer';
 import { Navbar } from './components/layout/Navbar';
 import { FoldExplorer } from './components/product/FoldExplorer';
 import { SvaraasSection } from './components/svaraas/SvaraasSection';
+import { ReserveHero } from './components/preorder/ReserveHero';
 import { PreorderPage } from './pages/PreorderPage';
+import { PREORDER_OPEN } from './data/preorder';
 import { LEGAL_PATHS } from './legal/company';
 import { COOKIE_POLICY } from './legal/cookies';
 import { LegalPage } from './legal/LegalPage';
@@ -20,7 +23,8 @@ import { TERMS } from './legal/terms';
 
 /** The site's pages, by path. A small lookup is enough here; no router needed. */
 const PAGES: Record<string, ComponentType> = {
-  '/pre-order': PreorderPage,
+  // Hidden while pre-orders are closed; the path then falls through to the home page.
+  ...(PREORDER_OPEN ? { '/pre-order': PreorderPage } : {}),
   [LEGAL_PATHS.privacy]: () => <LegalPage doc={PRIVACY_POLICY} />,
   [LEGAL_PATHS.terms]: () => <LegalPage doc={TERMS} />,
   [LEGAL_PATHS.cookies]: () => <LegalPage doc={COOKIE_POLICY} />,
@@ -40,6 +44,8 @@ function HomePage() {
       <SvaraasSection selected={demoSvaraa} onSelect={setDemoSvaraa} />
       <WhySvaraa />
       <FoldExplorer />
+      <ReserveHero headingId="reserve-title" headingLevel="h2" ctaHref={PREORDER_OPEN ? '/pre-order#reserve' : undefined} className="pt-8" />
+      <Pricing />
       <MeetTheTeam />
       <TrustStrip />
       <ImpactStats />

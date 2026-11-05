@@ -82,7 +82,7 @@ export function TrustStrip() {
         >
           Core Team and Advisors
           {/* Second line in gold, like the italic second line of the other section headings. */}
-          <em className="block text-accent">hail from and worked at</em>
+          <em className="block text-accent">hail from </em>
         </h2>
         <div className="marquee-viewport no-scrollbar -mx-4 mt-6 overflow-hidden px-4 py-2 sm:mx-0 sm:px-0">
           <div className="marquee-track flex w-max">

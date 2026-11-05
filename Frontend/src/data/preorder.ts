@@ -77,6 +77,12 @@ export const PRODUCT_NAME = 'Svaraa Fold';
 /** Reservation fee per pendant, in US dollars. */
 export const RESERVATION_FEE_USD = 5;
 
+/**
+ * Whether pre-orders are open. While false, the /pre-order page is hidden (that URL shows the
+ * home page) and every button that leads to it is hidden too. Set to true to bring it back.
+ */
+export const PREORDER_OPEN = false;
+
 export const formatFee = (usd: number) => `$${usd}`;
 
 /**
