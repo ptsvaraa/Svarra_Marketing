@@ -32,8 +32,13 @@ export function Navbar() {
         className="mx-auto flex max-w-[1320px] items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-10"
       >
         <a href="/#top" className="flex items-center gap-2.5 rounded-lg focus-visible:outline-2 focus-visible:outline-primary" aria-label="Svaraa home">
-          <SvaraaMark className="size-9 text-primary dark:text-gold" />
-          <span className="font-serif text-3xl leading-none text-heading dark:text-gold">svaraa</span>
+          <SvaraaMark className="size-11 text-primary dark:text-gold" />
+          <span className="flex flex-col">
+            <span className="font-serif text-3xl leading-none text-heading dark:text-gold">svaraa</span>
+            <span className="mt-1 text-[0.7rem] leading-none font-semibold whitespace-nowrap text-heading sm:text-xs dark:text-gold/85">
+              AI Cognitive Companion
+            </span>
+          </span>
         </a>
         <div className="flex items-center gap-2 sm:gap-3 lg:gap-6">
           <ul className="hidden items-center gap-4 lg:flex xl:gap-6">
