@@ -51,8 +51,25 @@ const BACK_DESIGN = new THREE.Quaternion().setFromRotationMatrix(
 /** Face proportions, in design units. */
 const FACE_R = 2.0; // printed face decal, flush with the shell's edge
 const PX = 512 / FACE_R; // face texture pixels per unit
-const LOTUS_Y = 0.17;
-const LOGO_R = 1.36; // reach of the lotus mark's petals from its centre
+const GRILLE_R = 1.68; // radius of the speaker grille's arc; the four lower lights sit on the same circle
+const GRILLE_W = 0.28; // width of the grille slot
+const LED_R = 0.065; // radius of a status light
+/** Where the four lower lights sit on that circle: angles either side of straight down. */
+const LOWER_LIGHT_ANGLES = [-0.375, -0.125, 0.125, 0.375];
+const LOGO_R = 1.36; // reach of the lotus mark's top petal from its centre
+const LOGO_BOTTOM = (LOGO_R * 403) / 452; // the mark reaches less far below its centre than above
+/**
+ * Centre of the lotus mark: placed so the gap above it (to the grille) equals the gap below
+ * it (to the row of lights), whatever the grille and light positions are.
+ */
+const LOTUS_Y = (() => {
+  const grilleEdge = GRILLE_R - GRILLE_W / 2;
+  const meanCos = LOWER_LIGHT_ANGLES.reduce((sum, a) => sum + Math.cos(a), 0) / LOWER_LIGHT_ANGLES.length;
+  const lightsTop = -GRILLE_R * meanCos + LED_R;
+  return (grilleEdge + lightsTop) / 2 - (LOGO_R - LOGO_BOTTOM) / 2;
+})();
+/** Centre of the ring on the back. */
+const RING_Y = 0.17;
 const GLOW = '#ffc93c';
 
 /** What the front status lights show; see `setLights`. */
@@ -655,9 +672,9 @@ export class FoldScene {
     const at = (x: number, y: number) => [c + x * PX, c - y * PX] as const;
 
     // Speaker: a curved slot following the top edge, with fine perforations.
-    const slotR = 1.68 * PX;
+    const slotR = GRILLE_R * PX;
     const span = 0.56;
-    const slotW = 0.28 * PX;
+    const slotW = GRILLE_W * PX;
     ctx.strokeStyle = pal.slot;
     ctx.lineWidth = slotW;
     ctx.lineCap = 'round';
@@ -696,7 +713,7 @@ export class FoldScene {
     for (const [x, y] of FoldScene.LIGHTS) {
       const [px, py] = at(x, y);
       ctx.beginPath();
-      ctx.arc(px, py, 0.065 * PX, 0, TWO_PI);
+      ctx.arc(px, py, LED_R * PX, 0, TWO_PI);
       ctx.fill();
     }
   }
@@ -704,10 +721,8 @@ export class FoldScene {
   /** Status light positions on the face, in design units. */
   private static readonly LIGHTS: readonly (readonly [number, number])[] = [
     [0, LOTUS_Y + 0.97],
-    [-0.51, -1.43],
-    [-0.17, -1.43],
-    [0.17, -1.43],
-    [0.51, -1.43],
+    // Curved like the grille above: on the same circle, mirrored.
+    ...LOWER_LIGHT_ANGLES.map((a) => [GRILLE_R * Math.sin(a), -GRILLE_R * Math.cos(a)] as const),
   ];
 
   /** Draws the back: the svaraa.ai wordmark, sized for a 1024 x 256 canvas. */
@@ -854,17 +869,17 @@ export class FoldScene {
     // The back: glowing gold ring with the svaraa.ai wordmark and two bars above and below.
     const back = this.design(BACK_DESIGN, 0.172);
     pad.add(back);
-    back.add(this.mesh(new THREE.TorusGeometry(1.24, 0.08, 18, 160), this.glowMat(), [0, LOTUS_Y, 0]));
-    back.add(this.halo(this.haloTexture(1.24 / 1.8), 3.6, [0, LOTUS_Y, 0.02]));
+    back.add(this.mesh(new THREE.TorusGeometry(1.24, 0.08, 18, 160), this.glowMat(), [0, RING_Y, 0]));
+    back.add(this.halo(this.haloTexture(1.24 / 1.8), 3.6, [0, RING_Y, 0.02]));
     const barGeo = new THREE.CapsuleGeometry(0.06, 0.32, 6, 16);
     barGeo.scale(1, 1, 0.5);
-    for (const y of [LOTUS_Y + 1.52, LOTUS_Y - 1.62]) {
+    for (const y of [RING_Y + 1.52, RING_Y - 1.62]) {
       back.add(this.mesh(barGeo, this.glowMat(), [0, y, 0]));
       back.add(this.halo(dotHalo, 0.9, [0, y, 0.02], 0.55, GLOW));
     }
     const word = this.canvasTexture(1024, 256, (x) => this.drawWordmark(x));
     word.colorSpace = THREE.SRGBColorSpace;
-    back.add(this.mesh(new THREE.PlaneGeometry(2.3, 0.575), this.glowMat({ color: 0xffffff, map: word, transparent: true, depthWrite: false }), [0, LOTUS_Y, 0.01]));
+    back.add(this.mesh(new THREE.PlaneGeometry(2.3, 0.575), this.glowMat({ color: 0xffffff, map: word, transparent: true, depthWrite: false }), [0, RING_Y, 0.01]));
 
     // ---- internal parts (hidden inside the shells, revealed by Explode) ----
     // Internal frame with the enclosed magnets.

@@ -1,10 +1,28 @@
 import { memo, useId } from 'react';
 import { SVARAA_MARK_CENTRE_R, SVARAA_MARK_PETALS } from '../brand/svaraaMarkPath';
 
-/** Speaker perforations: two curved rows of holes in the slot near the top edge. */
+/**
+ * Face layout, matching the 3D model (foldScene.ts) scaled to this drawing: one 3D unit is
+ * GRILLE_R / 1.68 here. The speaker grille arcs along the top edge; the four lower lights sit on
+ * the same circle along the bottom, mirrored; the lotus mark is centred between them.
+ */
+const GRILLE_R = 76.5;
+const GRILLE_W = 15;
+const UNIT = GRILLE_R / 1.68;
+const LED_R = 3;
+const LOWER_LIGHT_ANGLES = [-0.375, -0.125, 0.125, 0.375];
+
+/** The grille slot: an arc of GRILLE_R either side of the top, 0.56 rad each way. */
+const GRILLE_PATH = (() => {
+  const x = GRILLE_R * Math.sin(0.56);
+  const y = -GRILLE_R * Math.cos(0.56);
+  return `M${-x} ${y}A${GRILLE_R} ${GRILLE_R} 0 0 1 ${x} ${y}`;
+})();
+
+/** Speaker perforations: two curved rows of holes in the grille slot. */
 const HOLES = (() => {
   const holes: { x: number; y: number }[] = [];
-  for (const [r, count] of [[73, 17], [79, 19]] as const) {
+  for (const [r, count] of [[GRILLE_R - 3.5, 17], [GRILLE_R + 2.5, 19]] as const) {
     for (let i = 0; i < count; i++) {
       const a = -0.5 + (1 * i) / (count - 1);
       holes.push({ x: Math.sin(a) * r, y: -Math.cos(a) * r });
@@ -13,15 +31,23 @@ const HOLES = (() => {
   return holes;
 })();
 
-/** Status lights: one in the lotus's top petal, four in a row below it. */
-const LIGHTS = [
-  { x: 0, y: -52 },
-  ...[-24, -8, 8, 24].map((x) => ({ x, y: 70 })),
-];
+/** The lotus mark: its top petal reaches LOGO_R above its centre, its bottom petals less far below. */
+const LOGO_R = 1.36 * UNIT;
+const LOGO_BOTTOM = (LOGO_R * 403) / 452;
+const MARK_SCALE = LOGO_R / 452;
+/** Centre of the mark (SVG y points down): equal gaps to the grille above and the lights below. */
+const MARK_Y = (() => {
+  const grilleEdge = -(GRILLE_R - GRILLE_W / 2);
+  const meanCos = LOWER_LIGHT_ANGLES.reduce((sum, a) => sum + Math.cos(a), 0) / LOWER_LIGHT_ANGLES.length;
+  const lightsTop = GRILLE_R * meanCos - LED_R;
+  return (grilleEdge + lightsTop) / 2 + (LOGO_R - LOGO_BOTTOM) / 2;
+})();
 
-/** The lotus mark's petals reach 452 units from its centre; this draws them 62 units across. */
-const MARK_SCALE = 62 / 452;
-const MARK_Y = -8;
+/** Status lights: one in the lotus's top petal, four curved along the bottom like the grille. */
+const LIGHTS = [
+  { x: 0, y: MARK_Y - 0.97 * UNIT },
+  ...LOWER_LIGHT_ANGLES.map((a) => ({ x: GRILLE_R * Math.sin(a), y: GRILLE_R * Math.cos(a) })),
+];
 
 /**
  * The Svaraa Fold pendant, drawn as vector art so it stays crisp at any size: folded and
@@ -93,7 +119,7 @@ export const PendantArt = memo(function PendantArt({ className }: { className?: 
       <circle r="98" fill={url('body')} />
 
       {/* Speaker slot */}
-      <path d="M-40.4-65.4A76.5 76.5 0 0 1 40.4-65.4" fill="none" stroke="#060607" strokeWidth="15" strokeLinecap="round" />
+      <path d={GRILLE_PATH} fill="none" stroke="#060607" strokeWidth={GRILLE_W} strokeLinecap="round" />
       {HOLES.map((h, i) => (
         <circle key={i} cx={h.x} cy={h.y + 0.5} r="1.25" fill="#34343a" />
       ))}
@@ -111,7 +137,7 @@ export const PendantArt = memo(function PendantArt({ className }: { className?: 
       {/* Status lights */}
       <g filter={url('glow')} fill="#ffcf4d">
         {LIGHTS.map((l, i) => (
-          <circle key={i} cx={l.x} cy={l.y} r={i === 0 ? 3.4 : 3} />
+          <circle key={i} cx={l.x} cy={l.y} r={i === 0 ? LED_R + 0.4 : LED_R} />
         ))}
       </g>
 
