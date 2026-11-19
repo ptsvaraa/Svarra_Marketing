@@ -15,14 +15,14 @@ export const COMPANY = {
   address: '[Registered office address, city, state, PIN]',
   website: 'svaraa.ai',
   privacyEmail: '[privacy@svaraa.ai]',
-  supportEmail: '[support@svaraa.ai]',
+  supportEmail: 'srk@svaraa.ai',
   grievanceOfficer: '[Name of Grievance Officer]',
   grievanceEmail: '[grievance@svaraa.ai]',
   jurisdictionCity: '[City]',
 } as const;
 
 /** Date each document last changed, shown at the top. Update when you edit one. */
-export const LAST_UPDATED = '30 October 2026';
+export const LAST_UPDATED = '20 November 2026';
 
 export const LEGAL_PATHS = {
   privacy: '/privacy-policy',

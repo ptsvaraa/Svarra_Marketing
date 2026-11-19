@@ -1,23 +1,35 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import { Minus, Pause, Play, Plus, RotateCcw } from 'lucide-react';
+import { Mic, MicOff, Minus, Pause, Play, Plus, Power, RotateCcw, Siren } from 'lucide-react';
 import {
   FOLD_DEFAULT_VIEW,
-  FOLD_FEATURE_ICONS,
-  FOLD_PHOTOS,
-  FOLD_VIEWS,
   foldViewById,
   type FoldFeatureIcon,
-  type FoldPhoto,
-  type FoldView,
 } from '../../data/svaraaFold';
 import { cn } from '../../lib/cn';
-import type { FoldScene } from './foldScene';
+import { FeatureStack } from './FeatureStack';
+import { startSiren } from '../../lib/siren';
+import type { FoldLightState, FoldScene } from './foldScene';
 
 type ViewerStatus = 'idle' | 'loading' | 'ready' | 'unsupported';
 type Overrides = { explode: number; fold: number } | null;
 
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/** Shape of the pill buttons under the viewer; `small` is the compact size beside the title. */
+const pillClass = (small = false) =>
+  cn(
+    'inline-flex items-center rounded-xl border font-medium whitespace-nowrap transition-colors',
+    small ? 'min-h-9 gap-1.5 px-3 text-xs' : 'min-h-10 gap-2 px-4 text-sm',
+    'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
+  );
+
+/** Pill button; `on` fills it for a toggle that is switched on. */
+const toggleClass = (on: boolean, small = false) =>
+  cn(
+    pillClass(small),
+    on ? 'border-primary bg-primary text-on-primary' : 'border-line bg-glass-strong text-heading hover:border-primary/40',
+  );
 
 function IconGlyph({ icon }: { icon: FoldFeatureIcon }) {
   return (
@@ -47,48 +59,33 @@ function IconGlyph({ icon }: { icon: FoldFeatureIcon }) {
 
 export function FoldExplorer() {
   const [selectedId, setSelectedId] = useState<string>(FOLD_DEFAULT_VIEW);
-  const [hoverId, setHoverId] = useState<string | null>(null);
   /** Slider values for the pinned view; null falls back to the view's own defaults. */
   const [overrides, setOverrides] = useState<Overrides>(null);
-  const [auto, setAuto] = useState(() => !prefersReducedMotion());
+  const [reduceMotion] = useState(prefersReducedMotion);
+  const [auto, setAuto] = useState(() => !reduceMotion);
   const [status, setStatus] = useState<ViewerStatus>('idle');
+  const [lights, setLights] = useState<FoldLightState>({ power: true, recording: false, sos: false, battery: 100 });
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<FoldScene | null>(null);
   const explodeId = useId();
   const foldId = useId();
+  const chargeId = useId();
 
-  const shownId = hoverId ?? selectedId;
-  const shown = foldViewById(shownId);
-  const hovering = hoverId !== null && hoverId !== selectedId;
-  const own = shownId === selectedId && overrides !== null;
+  const shown = foldViewById(selectedId);
   // Sliders work in 0–100; view defaults are stored as 0–1.
-  const explode = own ? overrides.explode : shown.explode * 100;
-  const fold = own ? overrides.fold : shown.fold * 100;
+  const explode = overrides ? overrides.explode : shown.explode * 100;
+  const fold = overrides ? overrides.fold : shown.fold * 100;
 
   const pick = (id: string) => {
     setSelectedId(id);
-    setHoverId(null);
     setOverrides(null);
   };
-  const preview = (id: string) => setHoverId(id);
-  const unpreview = (id: string) => setHoverId((cur) => (cur === id ? null : cur));
-  const hoverProps = (v: FoldView) => ({
-    onMouseEnter: () => preview(v.id),
-    onMouseLeave: () => unpreview(v.id),
-    onFocus: () => preview(v.id),
-    onBlur: () => unpreview(v.id),
-    onClick: () => pick(v.id),
-  });
 
-  /** Moving a slider pins the view being shown. Opening one way closes the other, as in the design. */
+  /** Opening one way closes the other, as in the design. */
   const onSlider = (which: 'explode' | 'fold', value: number) => {
     const base = { explode, fold };
-    if (shownId !== selectedId) {
-      setSelectedId(shownId);
-      setHoverId(null);
-    }
     setOverrides(
       which === 'explode'
         ? { explode: value, fold: value > 0 ? 0 : base.fold }
@@ -150,52 +147,26 @@ export function FoldExplorer() {
     sceneRef.current?.setAutoRotate(auto);
   }, [auto, status]);
 
-  const photoTile = (photo: FoldPhoto, className: string) => {
-    const info = FOLD_PHOTOS[photo];
-    const views = FOLD_VIEWS.filter((v) => v.source === photo);
-    return (
-      <div
-        className={cn('relative overflow-hidden bg-tint', className)}
-        style={{ aspectRatio: `${info.aspect[0]} / ${info.aspect[1]}` }}
-      >
-        <img
-          src={`${import.meta.env.BASE_URL}images/${info.file}`}
-          alt={info.alt}
-          width={info.aspect[0]}
-          height={info.aspect[1]}
-          loading="lazy"
-          decoding="async"
-          className="absolute inset-0 size-full object-cover"
-        />
-        {views.flatMap((v) =>
-          (v.hotspots ?? []).map(([l, t, w, h], i) => {
-            const active = v.id === shownId;
-            const pinned = v.id === selectedId;
-            return (
-              <button
-                key={`${v.id}-${i}`}
-                type="button"
-                aria-label={`View ${v.label} in 3D`}
-                aria-pressed={pinned}
-                {...hoverProps(v)}
-                className={cn(
-                  'absolute rounded-xl border-2 transition-colors duration-150 focus-visible:outline-none',
-                  active ? 'border-primary bg-primary/10' : pinned ? 'border-primary/55' : 'border-transparent hover:border-primary/40',
-                )}
-                style={{ left: `${l}%`, top: `${t}%`, width: `${w}%`, height: `${h}%` }}
-              >
-                {active && (
-                  <span className="pointer-events-none absolute bottom-2.5 left-1/2 hidden -translate-x-1/2 rounded-full bg-primary px-3 py-1.5 text-xs font-medium whitespace-nowrap text-on-primary shadow-lg sm:block">
-                    {v.label} · 3D
-                  </span>
-                )}
-              </button>
-            );
-          }),
-        )}
-      </div>
-    );
+  useEffect(() => {
+    sceneRef.current?.setLights(lights);
+  }, [lights, status]);
+
+  // The siren sounds while SOS is on, and stops when it's turned off or the section unmounts.
+  useEffect(() => {
+    if (!lights.sos) return;
+    return startSiren();
+  }, [lights.sos]);
+
+  /** Back to the folded pendant (Explode 0, Fold 100) with the camera reset. */
+  const resetAll = () => {
+    pick(FOLD_DEFAULT_VIEW);
+    sceneRef.current?.resetView();
   };
+
+  // Recording and SOS switch the pendant on; switching it off stops both.
+  const togglePower = () => setLights((l) => (l.power ? { ...l, power: false, recording: false, sos: false } : { ...l, power: true }));
+  const toggleRecording = () => setLights((l) => ({ ...l, power: true, recording: !l.recording }));
+  const toggleSos = () => setLights((l) => ({ ...l, power: true, sos: !l.sos }));
 
   return (
     <section id="product" aria-labelledby="product-title" className="scroll-mt-6 px-4 pt-20 sm:px-6 sm:pt-28 lg:px-10">
@@ -208,15 +179,18 @@ export function FoldExplorer() {
             </h2>
           </div>
           <p className="max-w-md text-base leading-relaxed text-muted">
-            Hover the pendant, a feature or the charging kit to preview it in 3D, and click to pin it. Drag to orbit,
-            pinch or use the zoom buttons to zoom, and double-click to reset.
+            Drag to orbit, pinch or use the zoom buttons to zoom, and double-click to reset. Scroll on to see what
+            each feature does.
           </p>
         </header>
 
         <div className="mt-10 grid items-start gap-6 lg:mt-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-8">
           {/* 3D viewer */}
-          <section aria-label="3D viewer" className="glass flex min-w-0 flex-col overflow-hidden rounded-[24px] lg:order-none">
-            <div ref={stageRef} className="relative h-[340px] bg-tint sm:h-[420px] lg:h-[470px]">
+          <section
+            aria-label="3D viewer"
+            className="glass flex min-w-0 flex-col overflow-hidden rounded-[24px] lg:sticky lg:top-[6.5rem]"
+          >
+            <div ref={stageRef} className="relative h-[340px] bg-tint sm:h-[420px] lg:h-[clamp(260px,40vh,470px)]">
               <canvas
                 ref={canvasRef}
                 role="img"
@@ -226,17 +200,12 @@ export function FoldExplorer() {
               {status !== 'ready' && (
                 <div className="absolute inset-0 grid place-items-center p-6 text-center text-sm text-muted" role="status">
                   {status === 'unsupported'
-                    ? '3D preview needs WebGL, which this browser has turned off. The photos still show every part.'
+                    ? '3D preview needs WebGL, which this browser has turned off.'
                     : 'Loading 3D model…'}
                 </div>
               )}
-              <span
-                className={cn(
-                  'pointer-events-none absolute top-4 left-4 rounded-full px-3 py-1.5 text-[0.68rem] font-medium tracking-[0.12em] uppercase',
-                  hovering ? 'bg-accent text-white' : 'bg-primary text-on-primary',
-                )}
-              >
-                {hovering ? 'Previewing' : '3D view'}
+              <span className="pointer-events-none absolute top-4 left-4 rounded-full bg-primary px-3 py-1.5 text-[0.68rem] font-medium tracking-[0.12em] text-on-primary uppercase">
+                3D view
               </span>
               <div className="absolute top-3 right-3 flex flex-col gap-1.5">
                 {[
@@ -258,9 +227,30 @@ export function FoldExplorer() {
             </div>
 
             <div className="flex flex-col gap-4 px-5 pt-5 pb-6 sm:px-6">
-              <div aria-live="polite">
-                <h3 className="font-serif text-[1.75rem] leading-tight text-heading">{shown.label}</h3>
-                <p className="mt-1 text-sm leading-relaxed text-muted">{shown.description}</p>
+              <div>
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                  <h3 aria-live="polite" className="font-serif text-[1.75rem] leading-tight text-heading">
+                    {shown.label}
+                  </h3>
+                  <div className="flex gap-1.5">
+                    <button
+                      type="button"
+                      aria-pressed={auto}
+                      onClick={() => setAuto((a) => !a)}
+                      className={toggleClass(auto, true)}
+                    >
+                      {auto ? <Pause className="size-3.5" aria-hidden="true" /> : <Play className="size-3.5" aria-hidden="true" />}
+                      Auto-rotate: {auto ? 'on' : 'off'}
+                    </button>
+                    <button type="button" onClick={resetAll} className={toggleClass(false, true)}>
+                      <RotateCcw className="size-3.5" aria-hidden="true" />
+                      Reset view
+                    </button>
+                  </div>
+                </div>
+                <p aria-live="polite" className="mt-1 text-sm leading-relaxed text-muted">
+                  {shown.description}
+                </p>
               </div>
 
               {shown.model === 'svaraa' && (
@@ -268,6 +258,8 @@ export function FoldExplorer() {
                   {[
                     { id: explodeId, label: 'Explode', value: explode, key: 'explode' as const },
                     { id: foldId, label: 'Fold', value: fold, key: 'fold' as const },
+                    // Battery level, shown on the four lights below the lotus (one per 25%).
+                    { id: chargeId, label: 'Charge', value: lights.battery, key: 'charge' as const },
                   ].map((s) => (
                     <div key={s.key} className="flex items-center gap-3">
                       <label htmlFor={s.id} className="w-16 text-sm font-medium text-heading">
@@ -280,7 +272,11 @@ export function FoldExplorer() {
                         max={100}
                         step={1}
                         value={Math.round(s.value)}
-                        onChange={(e) => onSlider(s.key, Number(e.target.value))}
+                        onChange={(e) => {
+                          const v = Number(e.target.value);
+                          if (s.key === 'charge') setLights((l) => ({ ...l, battery: v }));
+                          else onSlider(s.key, v);
+                        }}
                         className="h-6 flex-1 accent-[var(--c-primary)]"
                       />
                       <span className="w-10 text-right text-sm text-muted tabular-nums">{Math.round(s.value)}%</span>
@@ -289,87 +285,42 @@ export function FoldExplorer() {
                 </div>
               )}
 
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  aria-pressed={auto}
-                  onClick={() => setAuto((a) => !a)}
-                  className={cn(
-                    'inline-flex min-h-10 items-center gap-2 rounded-xl border px-4 text-sm font-medium transition-colors',
-                    'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
-                    auto ? 'border-primary bg-primary text-on-primary' : 'border-line bg-glass-strong text-heading hover:border-primary/40',
-                  )}
-                >
-                  {auto ? <Pause className="size-4" aria-hidden="true" /> : <Play className="size-4" aria-hidden="true" />}
-                  Auto-rotate: {auto ? 'on' : 'off'}
+              {/* Try the pendant's lights: power, recording and SOS. */}
+              <div className="flex flex-wrap gap-2" role="group" aria-label="Pendant lights">
+                <button type="button" aria-pressed={lights.power} onClick={togglePower} className={toggleClass(lights.power)}>
+                  <Power className="size-4" aria-hidden="true" />
+                  Pendant: {lights.power ? 'on' : 'off'}
                 </button>
                 <button
                   type="button"
-                  onClick={() => sceneRef.current?.resetView()}
-                  className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-line bg-glass-strong px-4 text-sm font-medium text-heading transition-colors hover:border-primary/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  aria-pressed={lights.recording}
+                  onClick={toggleRecording}
+                  className={toggleClass(lights.recording)}
                 >
-                  <RotateCcw className="size-4" aria-hidden="true" />
-                  Reset view
+                  {lights.recording ? <MicOff className="size-4" aria-hidden="true" /> : <Mic className="size-4" aria-hidden="true" />}
+                  Recording: {lights.recording ? 'on' : 'off'}
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={lights.sos}
+                  onClick={toggleSos}
+                  className={cn(
+                    pillClass(),
+                    lights.sos
+                      ? 'border-danger bg-danger text-white'
+                      : 'border-danger/40 bg-danger-soft text-danger hover:border-danger',
+                  )}
+                >
+                  <Siren className="size-4" aria-hidden="true" />
+                  {lights.sos ? 'Stop SOS' : 'SOS'}
                 </button>
               </div>
             </div>
           </section>
 
-          {/* Photos with hotspots, and the feature icons */}
-          <div className="flex min-w-0 flex-col gap-2">
-            {photoTile('hero', 'rounded-[20px]')}
-            <div className="flex gap-2">
-              <div style={{ flex: '306 1 0' }} className="min-w-0">
-                {photoTile('flat', 'rounded-2xl')}
-              </div>
-              <div style={{ flex: '386 1 0' }} className="min-w-0">
-                {photoTile('kit', 'rounded-2xl')}
-              </div>
-            </div>
-
-            <div
-              role="group"
-              aria-label="Svaraa Fold features"
-              className="glass mt-2 grid grid-cols-3 gap-1 rounded-2xl p-2 sm:grid-cols-6"
-            >
-              {FOLD_FEATURE_ICONS.map((icon) => {
-                const v = foldViewById(icon.id);
-                const pinned = v.id === selectedId;
-                const active = v.id === shownId;
-                return (
-                  <button
-                    key={icon.id}
-                    type="button"
-                    aria-label={`View ${v.label} in 3D`}
-                    aria-pressed={pinned}
-                    {...hoverProps(v)}
-                    className={cn(
-                      'flex flex-col items-center gap-2 rounded-xl px-1 py-2.5 transition-colors focus-visible:outline-2 focus-visible:outline-primary',
-                      active && !pinned && 'bg-primary/5',
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        'relative inline-flex size-12 items-center justify-center rounded-full transition-colors',
-                        pinned
-                          ? 'bg-primary text-on-primary'
-                          : active
-                            ? 'bg-primary/20 text-primary'
-                            : 'bg-primary/10 text-primary',
-                      )}
-                    >
-                      <IconGlyph icon={icon} />
-                      <span className="absolute top-0.5 right-0 size-2.5 rounded-full border-2 border-canvas bg-accent" aria-hidden="true" />
-                    </span>
-                    <span className="text-center text-xs leading-snug text-ink">
-                      {icon.lines[0]}
-                      <br />
-                      {icon.lines[1]}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+          {/* Feature cards that stack as the page scrolls */}
+          <div className="min-w-0">
+            <FeatureStack icon={(icon) => <IconGlyph icon={icon} />} reduceMotion={reduceMotion} />
           </div>
         </div>
         <p className="mt-6 text-center text-xs text-subtle">Concept design.</p>

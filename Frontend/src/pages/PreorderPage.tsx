@@ -11,14 +11,19 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import {
+  BALANCE_ON_DELIVERY_INR,
   BALANCE_ON_DELIVERY_USD,
   formatFee,
   IN_THE_BOX,
+  LIST_PRICE_INR,
   LIST_PRICE_USD,
   MAX_QUANTITY,
   PREORDER_DISCOUNT_PERCENT,
   PREORDER_FAQ,
+  PREORDER_PRICE_INR,
   PREORDER_PRICE_USD,
+  REFUND_PROMISE,
+  RESERVATION_FEE_INR,
   RESERVATION_FEE_USD,
   SAVING_USD,
 } from '../data/preorder';
@@ -36,7 +41,7 @@ const PERKS: { icon: LucideIcon; title: string; body: string }[] = [
   {
     icon: Ticket,
     title: `${formatFee(RESERVATION_FEE_USD)} holds your place`,
-    body: 'A small reservation fee secures your spot in the first edition.',
+    body: `A small reservation fee secures your spot in the first edition. ${REFUND_PROMISE}`,
   },
 ];
 
@@ -46,7 +51,7 @@ const PAYMENT_STEPS: { icon: LucideIcon; when: string; amount: number; note: str
     icon: Ticket,
     when: 'Today',
     amount: RESERVATION_FEE_USD,
-    note: 'Reservation fee. Holds your place in the first edition.',
+    note: `Reservation fee. Holds your place in the first edition. ${REFUND_PROMISE}`,
   },
   {
     icon: Truck,
@@ -91,6 +96,10 @@ function PriceCard() {
         </div>
       </div>
       <p className="relative mt-3 text-sm text-success">You save {formatFee(SAVING_USD)} on every pendant.</p>
+      <p className="relative mt-2 text-sm text-muted">
+        Paying in India? <span className="font-medium text-heading">{formatFee(PREORDER_PRICE_INR, 'inr')}</span>{' '}
+        <s className="decoration-gold/70">{formatFee(LIST_PRICE_INR, 'inr')}</s>, by UPI, card or netbanking.
+      </p>
 
       <span
         className="relative mt-7 block h-px bg-gradient-to-r from-gold/60 via-gold/25 to-transparent"
@@ -120,9 +129,10 @@ function PriceCard() {
       </ol>
 
       <p className="relative mt-7 border-t border-line pt-4 text-xs leading-relaxed text-subtle">
-        Prices in US dollars. {formatFee(RESERVATION_FEE_USD)} + {formatFee(BALANCE_ON_DELIVERY_USD)} ={' '}
-        {formatFee(PREORDER_PRICE_USD)} per pendant, before taxes and delivery. Up to {MAX_QUANTITY} pendants per
-        household.
+        Pay in US dollars: {formatFee(RESERVATION_FEE_USD)} + {formatFee(BALANCE_ON_DELIVERY_USD)} ={' '}
+        {formatFee(PREORDER_PRICE_USD)} per pendant. Or in rupees: {formatFee(RESERVATION_FEE_INR, 'inr')} +{' '}
+        {formatFee(BALANCE_ON_DELIVERY_INR, 'inr')} = {formatFee(PREORDER_PRICE_INR, 'inr')}. Before taxes and
+        delivery. Up to {MAX_QUANTITY} pendants per household.
       </p>
     </motion.div>
   );
@@ -220,8 +230,9 @@ export function PreorderPage() {
                 <div>
                   <h2 className="font-serif text-3xl text-heading">Reserve your Svaraa</h2>
                   <p className="mt-1.5 text-sm text-muted">
-                    Takes about two minutes. {formatFee(RESERVATION_FEE_USD)} per pendant today,{' '}
-                    {formatFee(BALANCE_ON_DELIVERY_USD)} at delivery.
+                    Takes about two minutes. {formatFee(RESERVATION_FEE_USD)} ({formatFee(RESERVATION_FEE_INR, 'inr')})
+                    per pendant today, {formatFee(BALANCE_ON_DELIVERY_USD)} ({formatFee(BALANCE_ON_DELIVERY_INR, 'inr')})
+                    at delivery.
                   </p>
                 </div>
                 <span className="shrink-0 rounded-full bg-gold/15 px-3 py-1 text-xs font-medium text-gold">

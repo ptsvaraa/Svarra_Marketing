@@ -32,7 +32,7 @@ export const PRIVACY_POLICY: LegalDoc = {
       body: (
         <ul>
           <li>Our website, {COMPANY.website}, including the live product demo and the pre-order page.</li>
-          <li>Reservations made through the pre-order form and paid through Stripe.</li>
+          <li>Reservations made through the pre-order form and paid through Razorpay.</li>
           <li>
             The Svaraa pendant and family app, once available. Product-specific details will be added to this policy
             before the product ships.
@@ -59,9 +59,9 @@ export const PRIVACY_POLICY: LegalDoc = {
               your reservation reference and your consent to be contacted.
             </li>
             <li>
-              <strong>Payment details:</strong> payments are processed by Stripe. We receive confirmation of payment,
-              the amount, and limited card information such as the card brand and last four digits. We never see or
-              store your full card number or security code.
+              <strong>Payment details:</strong> payments are processed by Razorpay. We receive confirmation of
+              payment, the amount and currency, and the method used (for example UPI, or a card&rsquo;s brand and last
+              four digits). We never see or store your full card number, security code, UPI PIN or banking password.
             </li>
           </ul>
 
@@ -143,9 +143,9 @@ export const PRIVACY_POLICY: LegalDoc = {
               </thead>
               <tbody>
                 <tr>
-                  <td>Stripe</td>
+                  <td>Razorpay</td>
                   <td>Payment processing and fraud prevention</td>
-                  <td>Name, email, reservation details, payment information</td>
+                  <td>Name, email, phone, reservation details, payment information</td>
                 </tr>
                 <tr>
                   <td>Vercel</td>
@@ -194,7 +194,7 @@ export const PRIVACY_POLICY: LegalDoc = {
       heading: 'Transfers outside India',
       body: (
         <p>
-          Some of our service providers, including Stripe and Vercel, may process data on servers outside India. When
+          Some of our service providers, such as Vercel, may process data on servers outside India. When
           this happens we rely on providers that apply strong safeguards, and we only transfer data to countries not
           restricted by the Government of India under the DPDP Act.
         </p>

@@ -1,10 +1,13 @@
 import * as THREE from 'three';
 import type { FoldAnim, FoldLayer, FoldModel, FoldView } from '../../data/svaraaFold';
+import { SVARAA_MARK_CENTRE_R, SVARAA_MARK_PETALS } from '../brand/svaraaMarkPath';
 
 /**
  * Procedural Svaraa Fold (fold-over pendant) models and a lightweight turntable viewer.
- * Ported from the design team's interactive mockup; geometry, material, lighting
- * and animation values are kept as designed. Everything is built in code.
+ * Two matte-black pods joined by a flexible bridge: the front pod carries the gold lotus
+ * face (speaker slot, centre button, status lights), the rear pod the glowing svaraa.ai
+ * ring. Folded and worn on its gold cord, the lotus faces out front and the ring out back.
+ * Everything is built in code.
  */
 
 interface Layer extends THREE.Group {
@@ -24,13 +27,47 @@ interface FoldParts {
   RR: number;
   XH: number;
   cord: THREE.Mesh;
-  switchKnob: THREE.Mesh;
+  /** Front status lights, top one first: the bulb and its halo. */
+  lights: { bulb: THREE.MeshBasicMaterial; halo: THREE.MeshBasicMaterial }[];
 }
 
 type Vec3 = [number, number, number];
 type Mats = FoldScene['mat'];
 
 const TWO_PI = Math.PI * 2;
+
+/**
+ * Face artwork is laid out in "design space": x right, y up (towards the bridge, which is the
+ * top of the worn pendant), z out of the face, origin at the pod centre. These turn design
+ * space into each pod's own frame, where the face points along +y.
+ */
+const FRONT_DESIGN = new THREE.Quaternion().setFromRotationMatrix(
+  new THREE.Matrix4().set(0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1),
+);
+const BACK_DESIGN = new THREE.Quaternion().setFromRotationMatrix(
+  new THREE.Matrix4().set(0, -1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, 0, 0, 0, 1),
+);
+
+/** Face proportions, in design units. */
+const FACE_R = 2.0; // printed face decal, flush with the shell's edge
+const PX = 512 / FACE_R; // face texture pixels per unit
+const LOTUS_Y = 0.17;
+const LOGO_R = 1.36; // reach of the lotus mark's petals from its centre
+const GLOW = '#ffc93c';
+
+/** What the front status lights show; see `setLights`. */
+export interface FoldLightState {
+  /** Pendant switched on: top light blinks green, the four below blink yellow. */
+  power: boolean;
+  /** Recording: the top light blinks purple instead of green. */
+  recording: boolean;
+  /** SOS: every light blinks red, fast. */
+  sos: boolean;
+  /** Battery charge, 0 to 100. The four lower lights show it: one per 25%, so 1–25% lights one. */
+  battery: number;
+}
+
+const LIGHT_COLORS = { off: new THREE.Color(0x2b2a2e), green: new THREE.Color(0x38f07a), yellow: new THREE.Color(GLOW), purple: new THREE.Color(0xb15cff), red: new THREE.Color(0xff2b2b) };
 
 export interface FoldShowOptions {
   /** Explode target, 0..1. Defaults to the view's own value. */
@@ -65,12 +102,12 @@ export class FoldScene {
   private focusMats: THREE.MeshStandardMaterial[] = [];
   private anim: FoldAnim | null = null;
   private cordWanted = false;
+  private lightState: FoldLightState = { power: true, recording: false, sos: false, battery: 100 };
   private explode = 0;
   private explodeTarget = 0;
   private fold = 0;
   private foldTarget = 0;
   private lastFold = -1;
-  private knobS = 0;
   private spin = 0;
   private spinTarget = 0;
   private phiBase = 0.45;
@@ -183,6 +220,11 @@ export class FoldScene {
     this.foldTarget = value;
   }
 
+  /** Sets what the front status lights show (power, recording, SOS). */
+  setLights(state: FoldLightState) {
+    this.lightState = { ...state };
+  }
+
   setAutoRotate(on: boolean) {
     this.auto = on;
   }
@@ -249,9 +291,7 @@ export class FoldScene {
     const t = this.time;
 
     // Fold and explode (explode collapses as the pendant folds).
-    let foldT = this.foldTarget;
-    if (this.anim === 'foldloop') foldT = 0.5 - 0.5 * Math.cos(t * 0.9);
-    this.fold += (foldT - this.fold) * ease(this.anim === 'foldloop' ? 12 : 4);
+    this.fold += (this.foldTarget - this.fold) * ease(4);
     this.explode += (this.explodeTarget - this.explode) * ease(4.5);
     const ex = this.explode * (1 - Math.min(1, this.fold * 3));
     for (const L of U.layers) L.position.set(0, L.userData.rest + (L.userData.exp - L.userData.rest) * ex, 0);
@@ -266,9 +306,6 @@ export class FoldScene {
       motor.position.x = s * Math.sin(t * 70);
       motor.position.z = s * Math.cos(t * 63);
     }
-    const slideT = a === 'slide' ? (Math.sin(t * 1.6) > 0 ? 1 : 0) : 0;
-    this.knobS += (slideT - this.knobS) * ease(8);
-    U.switchKnob.position.x = -0.11 + 0.22 * this.knobS;
 
     // Fold the rear pod around the bridge hinge.
     if (Math.abs(this.fold - this.lastFold) > 1e-4) {
@@ -284,6 +321,8 @@ export class FoldScene {
     else if (!wantCord && U.cord.parent) m.remove(U.cord);
 
     m.quaternion.slerp(this.modelTarget, ease(4));
+
+    this.updateLights(t);
 
     if (this.focusMats.length) {
       const glow = 0.16 + 0.12 * Math.sin(t * 3.2);
@@ -349,6 +388,26 @@ export class FoldScene {
 
     this.renderer.render(this.scene, cam);
   };
+
+  /**
+   * Blinks the front lights for the current state: off, on (green top light, battery level on the
+   * four below in yellow), recording (purple top light) or SOS (all red).
+   */
+  private updateLights(t: number) {
+    const { power, recording, sos, battery } = this.lightState;
+    const charged = battery <= 0 ? 0 : Math.ceil(Math.min(100, battery) / 25); // lower lights lit, 0..4
+    const C = LIGHT_COLORS;
+    // Smooth blink, 0..1: about once a second normally, three times a second for SOS.
+    const pulse = (hz: number) => 0.5 - 0.5 * Math.cos(t * TWO_PI * hz);
+    const level = sos ? pulse(3) : power ? 0.25 + 0.75 * pulse(1) : 0;
+    this.parts.lights.forEach(({ bulb, halo }, i) => {
+      const lit = sos || (power && (i === 0 || i <= charged));
+      const color = sos ? C.red : !lit ? C.off : i > 0 ? C.yellow : recording ? C.purple : C.green;
+      bulb.color.copy(C.off).lerp(color, level);
+      halo.color.copy(color);
+      halo.opacity = lit ? 0.95 * level : 0;
+    });
+  }
 
   private setFocus(list: readonly FoldLayer[] | null, fade: boolean) {
     this.focusMats = [];
@@ -475,7 +534,51 @@ export class FoldScene {
     pouch: () => new THREE.MeshStandardMaterial({ color: 0xc9cacf, roughness: 0.32, metalness: 0.65 }),
     cream: () =>
       new THREE.MeshPhysicalMaterial({ color: 0xeadfcf, roughness: 0.55, sheen: 0.3, sheenColor: new THREE.Color(0xffffff), side: THREE.DoubleSide }),
+    silicone: () =>
+      new THREE.MeshPhysicalMaterial({ color: 0x141416, roughness: 0.58, clearcoat: 0.18, clearcoatRoughness: 0.45, sheen: 0.25, sheenRoughness: 0.6, sheenColor: new THREE.Color(0x3a3a40) }),
+    brightGold: () => new THREE.MeshStandardMaterial({ color: 0xffc22e, metalness: 0.75, roughness: 0.2 }),
   };
+
+  /** Unlit, untone-mapped gold for the lights, so they read as glowing. Left out of focus highlighting. */
+  private glowMat(opts: THREE.MeshBasicMaterialParameters = {}) {
+    const m = new THREE.MeshBasicMaterial({ color: GLOW, toneMapped: false, ...opts });
+    m.userData.glow = true;
+    return m;
+  }
+
+  /** Soft additive halo texture: a white radial falloff (tinted per halo), or a blurred gold ring when `ring` is given (0..1 of the radius). */
+  private haloTexture(ring?: number) {
+    const t = this.canvasTexture(256, 256, (x) => {
+      if (ring == null) {
+        const g = x.createRadialGradient(128, 128, 0, 128, 128, 128);
+        g.addColorStop(0, 'rgba(255,255,255,0.95)');
+        g.addColorStop(0.25, 'rgba(255,255,255,0.42)');
+        g.addColorStop(1, 'rgba(255,255,255,0)');
+        x.fillStyle = g;
+        x.fillRect(0, 0, 256, 256);
+        return;
+      }
+      x.strokeStyle = 'rgba(255,190,60,0.85)';
+      x.shadowColor = 'rgba(255,180,40,1)';
+      x.lineWidth = 9;
+      for (const blur of [26, 14, 6]) {
+        x.shadowBlur = blur;
+        x.beginPath();
+        x.arc(128, 128, 128 * ring, 0, TWO_PI);
+        x.stroke();
+      }
+    });
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  }
+
+  private halo(map: THREE.Texture, size: number, pos: Vec3, opacity = 1, color: THREE.ColorRepresentation = 0xffffff) {
+    return this.mesh(
+      new THREE.PlaneGeometry(size, size),
+      this.glowMat({ color, map, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }),
+      pos,
+    );
+  }
 
   private lathe(pts: [number, number][], segments = 96) {
     return new THREE.LatheGeometry(pts.map(([x, y]) => new THREE.Vector2(x, y)), segments);
@@ -526,14 +629,18 @@ export class FoldScene {
     obj.quaternion.setFromUnitVectors(axis, dir.clone().normalize());
   }
 
-  /** Draws the pendant face: speaker perforations, gold lotus and button. Also renders its metal/roughness maps. */
-  private drawFace(ctx: CanvasRenderingContext2D, mode: 'color' | 'metal' | 'rough') {
+  /**
+   * Draws the lotus face (design up = top of the canvas): speaker slot, five-fold gold lotus and
+   * status lights on matte black. Also renders its metal, roughness and bump maps.
+   */
+  private drawFace(ctx: CanvasRenderingContext2D, mode: 'color' | 'metal' | 'rough' | 'bump') {
     const S = 1024;
     const c = 512;
     const pal = {
-      color: { bg: '#47232F', line: '#E0A766', hole: '#22111A', btn: '#4A2735' },
-      metal: { bg: '#000000', line: '#ffffff', hole: '#000000', btn: '#000000' },
-      rough: { bg: 'rgb(225,225,225)', line: 'rgb(64,64,64)', hole: 'rgb(235,235,235)', btn: 'rgb(170,170,170)' },
+      color: { bg: '#141416', slot: '#08080a', hole: '#303036', line: '#ffc527', led: '#2b2a2e' },
+      metal: { bg: '#000000', slot: '#000000', hole: '#000000', line: 'rgb(140,140,140)', led: '#000000' },
+      rough: { bg: 'rgb(150,150,150)', slot: 'rgb(210,210,210)', hole: 'rgb(170,170,170)', line: 'rgb(70,70,70)', led: 'rgb(80,80,80)' },
+      bump: { bg: 'rgb(128,128,128)', slot: 'rgb(40,40,40)', hole: 'rgb(10,10,10)', line: 'rgb(235,235,235)', led: 'rgb(170,170,170)' },
     }[mode];
     ctx.fillStyle = pal.bg;
     ctx.fillRect(0, 0, S, S);
@@ -541,77 +648,95 @@ export class FoldScene {
       let seed = 7;
       const rnd = () => ((seed = (seed * 16807) % 2147483647), seed / 2147483647);
       for (let i = 0; i < 6000; i++) {
-        ctx.fillStyle = rnd() > 0.5 ? 'rgba(255,255,255,0.035)' : 'rgba(0,0,0,0.05)';
+        ctx.fillStyle = rnd() > 0.5 ? 'rgba(255,255,255,0.025)' : 'rgba(0,0,0,0.05)';
         ctx.fillRect(rnd() * S, rnd() * S, 2, 2);
       }
     }
+    const at = (x: number, y: number) => [c + x * PX, c - y * PX] as const;
+
+    // Speaker: a curved slot following the top edge, with fine perforations.
+    const slotR = 1.68 * PX;
+    const span = 0.56;
+    const slotW = 0.28 * PX;
+    ctx.strokeStyle = pal.slot;
+    ctx.lineWidth = slotW;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.arc(c, c, slotR, -Math.PI / 2 - span, -Math.PI / 2 + span);
+    ctx.stroke();
     ctx.fillStyle = pal.hole;
-    const R = 512;
-    const dir = 2.0;
-    for (let row = 0, y = 0; y < S; y += 22, row++) {
-      for (let x = (row % 2) * 11; x < S; x += 22) {
-        const dx = x - c;
-        const dy = c - y;
-        const d = Math.sqrt(dx * dx + dy * dy);
-        let ang = Math.atan2(dx, dy) - dir;
-        ang = Math.atan2(Math.sin(ang), Math.cos(ang));
-        if (d > 0.79 * R && d < 0.94 * R && Math.abs(ang) < 0.62) {
+    for (let row = 0, y = 0; y < c; y += 9, row++) {
+      for (let x = (row % 2) * 4.5; x < S; x += 9) {
+        const d = Math.hypot(x - c, y - c);
+        const ang = Math.atan2(x - c, c - y);
+        const end = Math.max(0, Math.abs(ang) - span) * slotR; // distance past the slot's end
+        if (Math.hypot(d - slotR, end) < slotW / 2 - 5) {
           ctx.beginPath();
-          ctx.arc(x, y, 6, 0, TWO_PI);
+          ctx.arc(x, y, 2.6, 0, TWO_PI);
           ctx.fill();
         }
       }
     }
-    const pol = (r: number, a: number) => [c + r * Math.sin(a), c - r * Math.cos(a)] as const;
-    const petal = (a: number, rb: number, rt: number, dB: number, dC: number, rc: number) => {
-      const p0 = pol(rb, a - dB);
-      const tip = pol(rt, a);
-      const p1 = pol(rb, a + dB);
-      const c0 = pol(rc, a - dC);
-      const c1 = pol(rc, a + dC);
-      ctx.beginPath();
-      ctx.moveTo(p0[0], p0[1]);
-      ctx.quadraticCurveTo(c0[0], c0[1], tip[0], tip[1]);
-      ctx.quadraticCurveTo(c1[0], c1[1], p1[0], p1[1]);
-      ctx.stroke();
-    };
-    ctx.strokeStyle = pal.line;
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-    ctx.lineWidth = mode === 'color' ? 8 : 10;
-    for (let i = 0; i < 8; i++) {
-      const a = (i * Math.PI) / 4;
-      petal(a, 118, 372, 0.3, 0.38, 290);
-      petal(a + Math.PI / 8, 112, 248, 0.32, 0.42, 196);
-    }
-    ctx.lineWidth = mode === 'color' ? 5 : 7;
-    for (let i = 0; i < 8; i++) petal((i * Math.PI) / 4, 140, 300, 0.15, 0.2, 236);
-    ctx.lineWidth = mode === 'color' ? 6 : 8;
+
+    // The Svaraa lotus mark, as on the website, in gold.
+    const [lx, ly] = at(0, LOTUS_Y);
+    const s = (LOGO_R * PX) / 452; // the mark's petals reach 452 units from its centre
+    ctx.save();
+    ctx.translate(lx, ly);
+    ctx.scale(s, s);
+    ctx.fillStyle = pal.line;
+    ctx.fill(new Path2D(SVARAA_MARK_PETALS), 'evenodd');
     ctx.beginPath();
-    ctx.arc(c, c, 108, 0, TWO_PI);
-    ctx.stroke();
-    ctx.fillStyle = pal.btn;
-    ctx.beginPath();
-    ctx.arc(c, c, 97, 0, TWO_PI);
+    ctx.arc(0, 0, SVARAA_MARK_CENTRE_R, 0, TWO_PI);
     ctx.fill();
+    ctx.restore();
+
+    // Status lights: one in the top petal, four in a row below the lotus.
+    ctx.fillStyle = pal.led;
+    for (const [x, y] of FoldScene.LIGHTS) {
+      const [px, py] = at(x, y);
+      ctx.beginPath();
+      ctx.arc(px, py, 0.065 * PX, 0, TWO_PI);
+      ctx.fill();
+    }
   }
 
-  private braid(repeat: [number, number]) {
+  /** Status light positions on the face, in design units. */
+  private static readonly LIGHTS: readonly (readonly [number, number])[] = [
+    [0, LOTUS_Y + 0.97],
+    [-0.51, -1.43],
+    [-0.17, -1.43],
+    [0.17, -1.43],
+    [0.51, -1.43],
+  ];
+
+  /** Draws the back: the svaraa.ai wordmark, sized for a 1024 x 256 canvas. */
+  private drawWordmark(ctx: CanvasRenderingContext2D) {
+    ctx.fillStyle = '#f7c443';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '400 172px Georgia, "Times New Roman", serif';
+    ctx.shadowColor = 'rgba(255,184,40,0.85)';
+    ctx.shadowBlur = 14;
+    ctx.fillText('svaraa.ai', 512, 136);
+  }
+
+  private braid(repeat: [number, number], [base, dark, light] = ['#C9A98A', '#A3805F', '#E4CDB1']) {
     const t = this.canvasTexture(
       128,
       32,
       (x) => {
-        x.fillStyle = '#C9A98A';
+        x.fillStyle = base;
         x.fillRect(0, 0, 128, 32);
         x.lineCap = 'round';
         for (let i = -40; i < 170; i += 10) {
-          x.strokeStyle = '#A3805F';
+          x.strokeStyle = dark;
           x.lineWidth = 3;
           x.beginPath();
           x.moveTo(i, 0);
           x.lineTo(i + 18, 32);
           x.stroke();
-          x.strokeStyle = '#E4CDB1';
+          x.strokeStyle = light;
           x.lineWidth = 2;
           x.beginPath();
           x.moveTo(i + 18, 0);
@@ -634,6 +759,14 @@ export class FoldScene {
 
   // ── the fold-over pendant ───────────────────────────────────
 
+  /** A group that places design-space artwork onto a pod's face, `lift` above the layer's origin. */
+  private design(q: THREE.Quaternion, lift: number) {
+    const g = new THREE.Group();
+    g.quaternion.copy(q);
+    g.position.set(0, lift, 0);
+    return g;
+  }
+
   private buildSvaraa(): { root: THREE.Group; parts: FoldParts } {
     const M = this.mat;
     const RM = 2.3;
@@ -653,69 +786,87 @@ export class FoldScene {
       layerMap[L.name as FoldLayer] = L;
       return L;
     };
+    const dotHalo = this.haloTexture();
 
-    // Main pod: silicone shell with a raised bezel around the recessed face.
+    // Main pod: a soft matte-black silicone pebble; the face sits flush with its rounded edge.
     const housing = add(main, this.layer('housing', 0, 0));
-    housing.add(this.mesh(this.lathe([[0, 0], [1.9, 0], [2.14, 0.05], [2.27, 0.2], [2.33, 0.5], [2.31, 0.8], [2.25, 0.98], [2.16, 1.04], [2.06, 1.03], [2.0, 0.97], [1.99, 0.86], [1.99, 0.22], [1.88, 0.12], [0, 0.12]], 128), M.rose()));
-    housing.add(this.mesh(this.lathe([[1.84, 0.78], [2.0, 0.78], [2.0, 0.82], [1.84, 0.82], [1.84, 0.78]], 128), M.rose()));
+    housing.add(this.mesh(this.lathe([[0, 0], [1.9, 0], [2.14, 0.05], [2.27, 0.2], [2.33, 0.48], [2.3, 0.7], [2.22, 0.85], [2.1, 0.93], [2.0, 0.955], [1.99, 0.94], [1.99, 0.2], [1.88, 0.12], [0, 0.12]], 128), M.silicone()));
 
-    // Physical mic privacy slider on the side wall.
-    const sw = add(main, this.layer('switch', 0, 0));
-    const swHolder = new THREE.Group();
-    const phi = -0.55;
-    swHolder.position.set(Math.sin(phi) * 2.33, 0.5, Math.cos(phi) * 2.33);
-    swHolder.rotation.y = phi;
-    swHolder.add(this.mesh(new THREE.BoxGeometry(0.62, 0.14, 0.05), M.black()));
-    const knob = this.mesh(new THREE.BoxGeometry(0.28, 0.18, 0.1), new THREE.MeshPhysicalMaterial({ color: 0x5a2735, roughness: 0.5, clearcoat: 0.2 }), [-0.11, 0, 0.05]);
-    swHolder.add(knob);
-    sw.add(swHolder);
-
-    // Matte face plate with the lotus inlay and speaker perforations.
+    // Front face: gold lotus, speaker slot and status lights on matte black.
     const face = add(main, this.layer('face', 0.82, 5.3));
-    const faceMap = this.canvasTexture(1024, 1024, (x) => this.drawFace(x, 'color'));
+    const map = (mode: 'color' | 'metal' | 'rough' | 'bump') => this.canvasTexture(1024, 1024, (x) => this.drawFace(x, mode));
+    const faceMap = map('color');
     faceMap.colorSpace = THREE.SRGBColorSpace;
     const faceMat = new THREE.MeshPhysicalMaterial({
       map: faceMap,
-      metalnessMap: this.canvasTexture(1024, 1024, (x) => this.drawFace(x, 'metal')),
+      metalnessMap: map('metal'),
       metalness: 1,
-      roughnessMap: this.canvasTexture(1024, 1024, (x) => this.drawFace(x, 'rough')),
+      roughnessMap: map('rough'),
       roughness: 1,
-      sheen: 0.04,
-      sheenColor: new THREE.Color(0x9a6a7a),
-      envMapIntensity: 0.55,
+      bumpMap: map('bump'),
+      bumpScale: 2.2,
+      clearcoat: 0.12,
+      clearcoatRoughness: 0.5,
+      envMapIntensity: 1.1,
     });
-    face.add(this.mesh(new THREE.CylinderGeometry(1.96, 1.97, 0.14, 128), M.aub(), [0, 0.07, 0]));
-    face.add(this.mesh(new THREE.CircleGeometry(1.96, 128), faceMat, [0, 0.1405, 0], [-Math.PI / 2, 0, 0]));
+    face.add(this.mesh(new THREE.CylinderGeometry(2.0, 2.0, 0.14, 128), M.silicone(), [0, 0.07, 0]));
+    const front = this.design(FRONT_DESIGN, 0.1405);
+    face.add(front);
+    front.add(this.mesh(new THREE.CircleGeometry(FACE_R, 128), faceMat));
+    const ledGeo = new THREE.SphereGeometry(0.06, 20, 10, 0, TWO_PI, 0, Math.PI / 2);
+    ledGeo.rotateX(Math.PI / 2);
+    const lights: FoldParts['lights'] = [];
+    for (const [x, y] of FoldScene.LIGHTS) {
+      const bulb = this.mesh(ledGeo, this.glowMat(), [x, y, 0]);
+      const halo = this.halo(dotHalo, 0.5, [x, y, 0.01], 0.9);
+      front.add(bulb, halo);
+      lights.push({ bulb: bulb.material as THREE.MeshBasicMaterial, halo: halo.material as THREE.MeshBasicMaterial });
+    }
 
-    // Flush matching button.
+    // Centre button: a polished gold dome at the heart of the lotus.
     const button = add(main, this.layer('button', 0.82, 5.3));
-    button.add(this.mesh(new THREE.CylinderGeometry(0.37, 0.37, 0.02, 64), new THREE.MeshPhysicalMaterial({ color: 0x45232f, roughness: 0.66, sheen: 0.15, sheenColor: new THREE.Color(0x9a6a7a) }), [0, 0.148, 0]));
+    const dome = this.design(FRONT_DESIGN, 0.1405);
+    button.add(dome);
+    const domeGeo = new THREE.SphereGeometry(0.27, 48, 16, 0, TWO_PI, 0, Math.PI / 2);
+    domeGeo.rotateX(Math.PI / 2);
+    domeGeo.scale(1, 1, 0.55);
+    dome.add(this.mesh(domeGeo, M.brightGold(), [0, LOTUS_Y, 0]));
+    dome.add(this.mesh(new THREE.TorusGeometry(0.28, 0.025, 10, 64), M.gold(), [0, LOTUS_Y, 0]));
 
-    // Rear pod: silicone shell + plain aubergine rear pad.
+    // Rear pod: silicone pebble + flush rear pad that faces out when folded.
     const rh = add(rear, this.layer('rhousing', 0, 0));
-    rh.add(this.mesh(this.lathe([[0, 0], [1.9, 0], [2.14, 0.05], [2.27, 0.18], [2.33, 0.42], [2.31, 0.66], [2.25, 0.82], [2.16, 0.88], [2.06, 0.87], [2.0, 0.81], [1.99, 0.7], [1.99, 0.2], [1.88, 0.1], [0, 0.1]], 128), M.rose()));
-    rh.add(this.mesh(this.lathe([[1.84, 0.62], [2.0, 0.62], [2.0, 0.66], [1.84, 0.66], [1.84, 0.62]], 128), M.rose()));
-    const pad = add(rear, this.layer('pad', 0.66, 2.6));
+    rh.add(this.mesh(this.lathe([[0, 0], [1.9, 0], [2.14, 0.05], [2.27, 0.18], [2.33, 0.42], [2.3, 0.6], [2.22, 0.73], [2.1, 0.8], [2.0, 0.825], [1.99, 0.81], [1.99, 0.2], [1.88, 0.1], [0, 0.1]], 128), M.silicone()));
+    const pad = add(rear, this.layer('pad', 0.66, 2.9));
     const padTex = this.canvasTexture(512, 512, (x) => {
-      x.fillStyle = '#45232F';
+      x.fillStyle = '#141416';
       x.fillRect(0, 0, 512, 512);
       let sd = 3;
       const rnd = () => ((sd = (sd * 16807) % 2147483647), sd / 2147483647);
       for (let i = 0; i < 9000; i++) {
-        x.fillStyle = rnd() > 0.5 ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.07)';
+        x.fillStyle = rnd() > 0.5 ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.06)';
         x.fillRect(rnd() * 512, rnd() * 512, 2, 2);
       }
     });
     padTex.colorSpace = THREE.SRGBColorSpace;
-    const padMat = new THREE.MeshPhysicalMaterial({ map: padTex, roughness: 0.9, envMapIntensity: 0.55, sheen: 0.08, sheenColor: new THREE.Color(0x8e5d70), side: THREE.DoubleSide });
-    pad.add(this.mesh(this.lathe([[0, 0], [1.9, 0], [1.96, 0.04], [1.97, 0.1], [1.92, 0.15], [1.8, 0.17], [0, 0.17]], 128), padMat));
-    const contactMat = M.gold();
-    for (const z of [-0.26, 0.26]) {
-      pad.add(this.mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.04, 32), contactMat, [1.15, 0.18, z]));
-      pad.add(this.mesh(new THREE.SphereGeometry(0.12, 24, 8, 0, TWO_PI, 0, 0.5), contactMat, [1.15, 0.17, z]));
-    }
+    const padMat = new THREE.MeshPhysicalMaterial({ map: padTex, roughness: 0.62, clearcoat: 0.15, clearcoatRoughness: 0.45, sheen: 0.2, sheenColor: new THREE.Color(0x3a3a40), side: THREE.DoubleSide });
+    pad.add(this.mesh(this.lathe([[0, 0], [1.99, 0], [2.0, 0.17], [0, 0.17]], 128), padMat));
 
-    // ---- internal parts (hidden inside the shell, revealed by Explode) ----
+    // The back: glowing gold ring with the svaraa.ai wordmark and two bars above and below.
+    const back = this.design(BACK_DESIGN, 0.172);
+    pad.add(back);
+    back.add(this.mesh(new THREE.TorusGeometry(1.24, 0.08, 18, 160), this.glowMat(), [0, LOTUS_Y, 0]));
+    back.add(this.halo(this.haloTexture(1.24 / 1.8), 3.6, [0, LOTUS_Y, 0.02]));
+    const barGeo = new THREE.CapsuleGeometry(0.06, 0.32, 6, 16);
+    barGeo.scale(1, 1, 0.5);
+    for (const y of [LOTUS_Y + 1.52, LOTUS_Y - 1.62]) {
+      back.add(this.mesh(barGeo, this.glowMat(), [0, y, 0]));
+      back.add(this.halo(dotHalo, 0.9, [0, y, 0.02], 0.55, GLOW));
+    }
+    const word = this.canvasTexture(1024, 256, (x) => this.drawWordmark(x));
+    word.colorSpace = THREE.SRGBColorSpace;
+    back.add(this.mesh(new THREE.PlaneGeometry(2.3, 0.575), this.glowMat({ color: 0xffffff, map: word, transparent: true, depthWrite: false }), [0, LOTUS_Y, 0.01]));
+
+    // ---- internal parts (hidden inside the shells, revealed by Explode) ----
     // Internal frame with the enclosed magnets.
     const frame = add(main, this.layer('frame', 0.13, 1.15));
     const beige = M.beige();
@@ -729,8 +880,8 @@ export class FoldScene {
     const fm = M.metal();
     for (const x of [-0.85, 0.85]) frame.add(this.mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.16, 40), fm, [x, 0.08, 0.15]));
 
-    // Rechargeable battery.
-    const battery = add(main, this.layer('battery', 0.32, 2.05));
+    // Rechargeable battery, in the rear pod behind the ring.
+    const battery = add(rear, this.layer('battery', 0.4, 2.05));
     const bg = new THREE.ExtrudeGeometry(this.rr(2.6, 1.25, 0.22), {
       depth: 0.3, bevelEnabled: true, bevelThickness: 0.04, bevelSize: 0.04, bevelSegments: 4, curveSegments: 10,
     });
@@ -740,7 +891,7 @@ export class FoldScene {
     const kap = M.kapton();
     const bm = M.metal();
     for (const x of [-1.23, 1.23]) battery.add(this.mesh(new THREE.BoxGeometry(0.2, 0.4, 1.27), kap, [x, 0, 0]));
-    for (const z of [-0.3, 0.3]) battery.add(this.mesh(new THREE.BoxGeometry(0.3, 0.03, 0.16), bm, [1.45, 0.05, z]));
+    for (const z of [-0.3, 0.3]) battery.add(this.mesh(new THREE.BoxGeometry(0.3, 0.03, 0.16), bm, [-1.45, 0.05, z]));
 
     // Vibration motor.
     const motor = add(main, this.layer('motor', 0.58, 2.8));
@@ -811,16 +962,20 @@ export class FoldScene {
       }
     }
     bGeo.setIndex(idx);
-    bridge.add(this.mesh(bGeo, M.rose()));
+    bridge.add(this.mesh(bGeo, M.silicone()));
 
-    // Braided cord through the folded bridge loop (worn view).
+    // Gold braided cord through the folded bridge loop (worn view).
     const W = (x: number, y: number, z: number) => new THREE.Vector3(y, z, x);
     const cordCurve = new THREE.CatmullRomCurve3(
       [W(-3.0, 7.0, -0.7), W(-1.9, 4.6, -0.35), W(-0.85, 3.0, -0.05), W(0, 2.6, 0.02), W(0.85, 3.0, -0.05), W(1.9, 4.6, -0.35), W(3.0, 7.0, -0.7)],
       false,
       'centripetal',
     );
-    const cord = this.mesh(new THREE.TubeGeometry(cordCurve, 240, 0.14, 14, false), this.braid([80, 1]));
+    const cordMat = this.braid([80, 1], ['#d9a23a', '#a8741c', '#f7d37a']);
+    cordMat.metalness = 0.55;
+    cordMat.roughness = 0.45;
+    cordMat.sheenColor.setHex(0xffe2a0);
+    const cord = this.mesh(new THREE.TubeGeometry(cordCurve, 240, 0.14, 14, false), cordMat);
     cord.castShadow = true;
     cord.receiveShadow = true;
 
@@ -829,12 +984,12 @@ export class FoldScene {
       L.traverse((o) => {
         if (!(o instanceof THREE.Mesh)) return;
         const mats: THREE.Material[] = Array.isArray(o.material) ? o.material : [o.material];
-        for (const mt of mats) if (!set.includes(mt)) set.push(mt);
+        for (const mt of mats) if (!mt.userData.glow && !set.includes(mt)) set.push(mt);
       });
       L.userData.mats = set;
     }
 
-    return { root, parts: { layers, layerMap, rear, bridgePos, bridgeGeo: bGeo, NS, NR, RM, RR, XH, cord, switchKnob: knob } };
+    return { root, parts: { layers, layerMap, rear, bridgePos, bridgeGeo: bGeo, NS, NR, RM, RR, XH, cord, lights } };
   }
 
   /** Rebuilds the flexible bridge tube between the two pods for the current fold. */

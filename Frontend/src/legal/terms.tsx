@@ -11,6 +11,7 @@ import {
   PREORDER_DISCOUNT_PERCENT,
   PREORDER_PRICE_USD,
   PRODUCT_NAME,
+  RESERVATION_FEE_INR,
   RESERVATION_FEE_USD,
 } from '../data/preorder';
 import { COMPANY, LEGAL_PATHS } from './company';
@@ -18,6 +19,7 @@ import type { LegalDoc } from './LegalPage';
 
 const mail = (address: string) => <a href={`mailto:${address.replace(/[[\]]/g, '')}`}>{address}</a>;
 const fee = formatFee(RESERVATION_FEE_USD);
+const feeInr = formatFee(RESERVATION_FEE_INR, 'inr');
 
 export const TERMS: LegalDoc = {
   title: 'Terms & Conditions',
@@ -58,7 +60,8 @@ export const TERMS: LegalDoc = {
         <>
           <ul>
             <li>
-              A reservation costs <strong>{fee} per pendant</strong>, paid securely through Stripe. It holds your place
+              A reservation costs <strong>{fee} ({feeInr}) per pendant</strong>, paid securely through Razorpay in US
+              dollars or Indian rupees. It holds your place
               in the limited first edition of {PRODUCT_NAME}.
             </li>
             <li>
@@ -185,7 +188,7 @@ export const TERMS: LegalDoc = {
       heading: 'Third-party services and links',
       body: (
         <p>
-          Payments are handled by Stripe under Stripe&rsquo;s own terms. Our website links to other sites, such as our
+          Payments are handled by Razorpay under Razorpay&rsquo;s own terms. Our website links to other sites, such as our
           social media pages. We are not responsible for the content or practices of third-party sites and services.
         </p>
       ),

@@ -47,7 +47,7 @@ const PLANS: Plan[] = [
   {
     id: 'go',
     name: 'Go',
-    price: 19,
+    price: 9,
     icon: Sparkles,
     tagline: 'A daily companion that listens.',
     builds: 'Free',
@@ -62,7 +62,7 @@ const PLANS: Plan[] = [
   {
     id: 'gold',
     name: 'Gold',
-    price: 49,
+    price: 29,
     icon: Crown,
     tagline: 'All seven Svaraas, for the whole family.',
     builds: 'Go',
@@ -78,7 +78,7 @@ const PLANS: Plan[] = [
   {
     id: 'platinum',
     name: 'Diamond',
-    price: 59,
+    price: 39,
     icon: Gem,
     tagline: 'Round-the-clock care, with people behind it.',
     builds: 'Gold',
@@ -92,7 +92,7 @@ const PLANS: Plan[] = [
   },
 ];
 
-const SALES_EMAIL = 'kannan@svaraa.ai';
+const SALES_EMAIL = 'srk@svaraa.ai';
 const SALES_HREF = `mailto:${SALES_EMAIL}?subject=${encodeURIComponent('Svaraa Enterprise enquiry')}`;
 
 /** What every enterprise partnership comes with. */

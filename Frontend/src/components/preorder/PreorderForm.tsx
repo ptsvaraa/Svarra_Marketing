@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import {
   AlertCircle,
   ArrowRight,
@@ -9,10 +9,10 @@ import {
   Loader2,
   Lock,
   Mail,
+  ShieldCheck,
   User,
 } from 'lucide-react';
 import {
-  BALANCE_ON_DELIVERY_USD,
   BUSINESS_CONTACT_EMAIL,
   BUSINESS_MAX_QUANTITY,
   BUYER_TYPES,
@@ -20,17 +20,17 @@ import {
   feeTotal,
   formatFee,
   INDIAN_STATES,
+  PRICES,
   quantityRange,
+  REFUND_PROMISE,
   WEARERS,
   type BuyerType,
+  type Currency,
 } from '../../data/preorder';
 import { cn } from '../../lib/cn';
 import {
-  clearDraft,
-  fetchCheckoutResult,
-  loadDraft,
+  CheckoutCancelledError,
   PreorderUnavailableError,
-  saveDraft,
   startCheckout,
   validatePreorder,
   type CheckoutResult,
@@ -68,6 +68,12 @@ const FIELD_ORDER: (keyof PreorderDetails)[] = [
   'state',
   'pincode',
   'consent',
+];
+
+/** How the buyer pays: rupees in India, or US dollars from abroad. */
+const CURRENCY_OPTIONS: { value: Currency; symbol: string; label: string; detail: string }[] = [
+  { value: 'inr', symbol: '₹', label: 'Pay in rupees', detail: 'UPI, Indian cards, netbanking' },
+  { value: 'usd', symbol: '$', label: 'Pay in US dollars', detail: 'International cards' },
 ];
 
 const inputClass = (invalid?: boolean) =>
@@ -132,15 +138,6 @@ type Status =
 
 const UNAVAILABLE = 'Online reservations are not open just yet. Please check back very soon.';
 
-/** Reads Stripe's return parameters once, then tidies the address bar. */
-function readCheckoutReturn(): { outcome: 'success' | 'cancelled'; sessionId: string | null } | null {
-  const params = new URLSearchParams(window.location.search);
-  const outcome = params.get('checkout');
-  if (outcome !== 'success' && outcome !== 'cancelled') return null;
-  window.history.replaceState(null, '', `${window.location.pathname}#reserve`);
-  return { outcome, sessionId: params.get('session_id') };
-}
-
 export function PreorderForm() {
   const uid = useId();
   const id = (name: string) => `${uid}-${name}`;
@@ -148,39 +145,8 @@ export function PreorderForm() {
   const [errors, setErrors] = useState<PreorderErrors>({});
   const [touched, setTouched] = useState<Partial<Record<keyof PreorderDetails, boolean>>>({});
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
+  const [currency, setCurrency] = useState<Currency>('inr');
   const formRef = useRef<HTMLFormElement>(null);
-
-  // Coming back from Stripe: confirm the payment, or refill the form after a cancel.
-  useEffect(() => {
-    const back = readCheckoutReturn();
-    if (!back) return;
-    document.getElementById('reserve')?.scrollIntoView({ block: 'start' });
-    const draft = loadDraft();
-    if (back.outcome === 'cancelled' || !back.sessionId) {
-      if (draft) setData({ ...EMPTY, ...draft });
-      setStatus({ kind: 'cancelled' });
-      return;
-    }
-    setStatus({ kind: 'verifying' });
-    fetchCheckoutResult(back.sessionId)
-      .then((result) => {
-        if (result.paid) {
-          clearDraft();
-          setStatus({ kind: 'paid', result });
-        } else {
-          if (draft) setData({ ...EMPTY, ...draft });
-          setStatus({ kind: 'error', message: 'Your payment has not gone through yet. Please try again.' });
-        }
-      })
-      .catch(() => {
-        if (draft) setData({ ...EMPTY, ...draft });
-        setStatus({
-          kind: 'error',
-          message:
-            'We could not confirm your payment. If you were charged, your receipt from Stripe is your confirmation.',
-        });
-      });
-  }, []);
 
   const set = <K extends keyof PreorderDetails>(key: K, value: PreorderDetails[K]) => {
     const next = { ...data, [key]: value };
@@ -220,15 +186,27 @@ export function PreorderForm() {
       return;
     }
     setStatus({ kind: 'submitting' });
+    let paying = false;
     try {
-      const url = await startCheckout(data);
-      saveDraft(data);
-      window.location.assign(url);
+      const result = await startCheckout(data, currency, () => {
+        paying = true;
+        setStatus({ kind: 'verifying' });
+      });
+      setStatus(
+        result.paid
+          ? { kind: 'paid', result }
+          : { kind: 'error', message: 'Your payment has not gone through yet. Please try again.' },
+      );
     } catch (err) {
+      if (err instanceof CheckoutCancelledError) {
+        setStatus({ kind: 'cancelled' });
+        return;
+      }
       setStatus({
         kind: 'error',
-        message:
-          err instanceof PreorderUnavailableError
+        message: paying
+          ? 'We could not confirm your payment. If you were charged, Razorpay has emailed you a receipt, and we will be in touch.'
+          : err instanceof PreorderUnavailableError
             ? UNAVAILABLE
             : 'We could not start the payment. Please check your connection and try again.',
       });
@@ -239,13 +217,13 @@ export function PreorderForm() {
     return (
       <div className="flex flex-col items-center gap-4 py-12 text-center" role="status" aria-live="polite">
         <Loader2 className="size-8 animate-spin text-primary" aria-hidden="true" />
-        <p className="text-muted">Confirming your payment with Stripe…</p>
+        <p className="text-muted">Confirming your payment with Razorpay…</p>
       </div>
     );
   }
 
   if (status.kind === 'paid') {
-    const { reference, email, amount } = status.result;
+    const { reference, email, amount, currency: paidIn } = status.result;
     return (
       <div className="flex flex-col items-center px-2 py-6 text-center" role="status" aria-live="polite">
         <span className="inline-flex size-16 items-center justify-center rounded-full bg-success-soft text-success">
@@ -253,7 +231,7 @@ export function PreorderForm() {
         </span>
         <h3 className="mt-6 font-serif text-3xl text-heading">Your place is reserved.</h3>
         <p className="mt-3 max-w-sm leading-relaxed text-muted">
-          Thank you. {amount != null && <>We&rsquo;ve received your {formatFee(amount)} reservation fee. </>}
+          Thank you. {amount != null && <>We&rsquo;ve received your {formatFee(amount, paidIn ?? currency)} reservation fee. </>}
           We&rsquo;ll be in touch{email ? <> at {email}</> : null} with delivery updates before the first edition ships.
         </p>
         {reference && (
@@ -266,8 +244,10 @@ export function PreorderForm() {
   }
 
   const submitting = status.kind === 'submitting';
-  const lines = feeLines(data.buyerType, data.quantity);
+  const lines = feeLines(data.buyerType, data.quantity, currency);
   const fee = feeTotal(lines);
+  const balance = PRICES[currency].balance;
+  const money = (amount: number) => formatFee(amount, currency);
   const business = data.buyerType === 'business';
   const range = quantityRange(data.buyerType);
 
@@ -505,26 +485,41 @@ export function PreorderForm() {
             }
             className="sm:col-span-2"
           >
-            <div className="relative">
-              <select
-                id={id('quantity')}
-                name="quantity"
+            {business ? (
+              // Typed rather than picked: a list of 10 to 100 is too long to scroll through.
+              <input
+                {...bind('quantity')}
                 aria-describedby={errors.quantity ? `${id('quantity')}-error` : `${id('quantity')}-hint`}
-                value={data.quantity}
-                onChange={(e) => set('quantity', Number(e.target.value))}
-                className={cn(inputClass(), 'appearance-none pr-10')}
-              >
-                {Array.from({ length: range.max - range.min + 1 }, (_, i) => range.min + i).map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown
-                className="pointer-events-none absolute top-1/2 right-4 size-4 -translate-y-1/2 text-muted"
-                aria-hidden="true"
+                type="text"
+                inputMode="numeric"
+                maxLength={String(range.max).length}
+                placeholder={`${range.min} to ${range.max}`}
+                value={data.quantity || ''}
+                onChange={(e) => set('quantity', Number(e.target.value.replace(/\D/g, '')))}
+                className={inputClass(!!errors.quantity)}
               />
-            </div>
+            ) : (
+              <div className="relative">
+                <select
+                  id={id('quantity')}
+                  name="quantity"
+                  aria-describedby={errors.quantity ? `${id('quantity')}-error` : `${id('quantity')}-hint`}
+                  value={data.quantity}
+                  onChange={(e) => set('quantity', Number(e.target.value))}
+                  className={cn(inputClass(), 'appearance-none pr-10')}
+                >
+                  {Array.from({ length: range.max - range.min + 1 }, (_, i) => range.min + i).map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  className="pointer-events-none absolute top-1/2 right-4 size-4 -translate-y-1/2 text-muted"
+                  aria-hidden="true"
+                />
+              </div>
+            )}
           </Field>
           {business && (
             <p className="flex items-start gap-2.5 rounded-xl border border-gold/30 bg-gold/10 px-4 py-3 text-sm leading-relaxed text-ink sm:col-span-2">
@@ -584,15 +579,58 @@ export function PreorderForm() {
       )}
 
       <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2" role="radiogroup" aria-labelledby={id('currency-label')}>
+          <span id={id('currency-label')} className="text-sm font-medium text-heading">
+            Pay in
+          </span>
+          <div className="grid grid-cols-2 gap-2">
+            {CURRENCY_OPTIONS.map((c) => {
+              const on = currency === c.value;
+              return (
+                <label
+                  key={c.value}
+                  className={cn(
+                    'flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-primary',
+                    on ? 'border-primary bg-primary/10' : 'border-line bg-glass-strong hover:border-primary/40',
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="currency"
+                    value={c.value}
+                    checked={on}
+                    onChange={() => setCurrency(c.value)}
+                    className="sr-only"
+                  />
+                  <span
+                    className={cn(
+                      'inline-flex size-9 shrink-0 items-center justify-center rounded-full font-serif text-lg',
+                      on ? 'bg-primary text-on-primary' : 'bg-primary/10 text-primary',
+                    )}
+                    aria-hidden="true"
+                  >
+                    {c.symbol}
+                  </span>
+                  <span className="min-w-0">
+                    <span className={cn('block text-sm leading-tight', on ? 'font-medium text-heading' : 'text-ink')}>
+                      {c.label}
+                    </span>
+                    <span className="block text-xs leading-snug text-subtle">{c.detail}</span>
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
         <dl className="rounded-xl border border-line bg-glass-strong px-4 py-3 text-sm">
           {lines.length > 1 &&
             lines.map((l) => (
               <div key={l.id} className="flex items-center justify-between py-1">
                 <dt className="text-muted">
                   {l.label}
-                  {l.quantity > 1 && ` · ${l.quantity} × ${formatFee(l.unitUsd)}`}
+                  {l.quantity > 1 && ` · ${l.quantity} × ${money(l.unit)}`}
                 </dt>
-                <dd className="text-ink tabular-nums">{formatFee(l.unitUsd * l.quantity)}</dd>
+                <dd className="text-ink tabular-nums">{money(l.unit * l.quantity)}</dd>
               </div>
             ))}
           <div
@@ -604,20 +642,20 @@ export function PreorderForm() {
             <dt className={lines.length > 1 ? 'font-medium text-heading' : 'text-muted'}>
               {lines.length > 1
                 ? 'Total today'
-                : `${lines[0]!.label}${lines[0]!.quantity > 1 ? ` · ${lines[0]!.quantity} × ${formatFee(lines[0]!.unitUsd)}` : ''}`}
+                : `${lines[0]!.label}${lines[0]!.quantity > 1 ? ` · ${lines[0]!.quantity} × ${money(lines[0]!.unit)}` : ''}`}
             </dt>
-            <dd className="font-serif text-xl text-heading tabular-nums">{formatFee(fee)}</dd>
+            <dd className="font-serif text-xl text-heading tabular-nums">{money(fee)}</dd>
           </div>
           {/* The rest of the pre-order price, so nobody mistakes the fee for the full cost. */}
           <div className="mt-2.5 flex items-start justify-between gap-4 border-t border-dashed border-line pt-2.5">
             <dt className="text-muted">
               Due once we start delivery
               <span className="block text-xs text-subtle">
-                {data.quantity > 1 && `${data.quantity} × ${formatFee(BALANCE_ON_DELIVERY_USD)}, `}plus taxes and
+                {data.quantity > 1 && `${data.quantity} × ${money(balance)}, `}plus taxes and
                 delivery charges
               </span>
             </dt>
-            <dd className="text-ink tabular-nums">{formatFee(BALANCE_ON_DELIVERY_USD * data.quantity)}</dd>
+            <dd className="text-ink tabular-nums">{money(balance * data.quantity)}</dd>
           </div>
         </dl>
         <button
@@ -632,14 +670,18 @@ export function PreorderForm() {
             </>
           ) : (
             <>
-              Reserve for {formatFee(fee)}
+              Reserve for {money(fee)}
               <ArrowRight className="size-5" aria-hidden="true" />
             </>
           )}
         </button>
+        <p className="flex items-center justify-center gap-1.5 text-center text-xs font-medium text-success">
+          <ShieldCheck className="size-3.5 shrink-0" aria-hidden="true" />
+          {REFUND_PROMISE}
+        </p>
         <p className="flex items-center justify-center gap-1.5 text-xs text-subtle">
           <Lock className="size-3.5" aria-hidden="true" />
-          Secure payment by Stripe. Your details are used only for your reservation.
+          Secure payment by Razorpay. Your details are used only for your reservation.
         </p>
       </div>
     </form>

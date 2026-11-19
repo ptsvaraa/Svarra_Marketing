@@ -16,7 +16,7 @@ interface SocialLink {
 }
 
 // ── Fill these in as pages and accounts go live. ──
-const CONTACT_EMAIL: string | undefined = undefined;
+const CONTACT_EMAIL: string | undefined = 'srk@svaraa.ai';
 
 const COLUMNS: readonly { title: string; links: readonly FooterLink[] }[] = [
   {
@@ -31,7 +31,12 @@ const COLUMNS: readonly { title: string; links: readonly FooterLink[] }[] = [
   },
   {
     title: 'Resources',
-    links: [{ label: 'Blog' }, { label: 'FAQs' }, { label: 'Help & Support' }, { label: 'Contact Us' }],
+    links: [
+      { label: 'Blog' },
+      { label: 'FAQs' },
+      { label: 'Help & Support' },
+      { label: 'Contact Us', href: CONTACT_EMAIL && `mailto:${CONTACT_EMAIL}` },
+    ],
   },
   {
     title: 'Legal',

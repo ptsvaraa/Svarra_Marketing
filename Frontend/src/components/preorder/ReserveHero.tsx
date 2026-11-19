@@ -13,6 +13,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import {
+  BALANCE_ON_DELIVERY_USD,
   formatFee,
   LIST_PRICE_USD,
   PREORDER_DISCOUNT_PERCENT,
@@ -60,7 +61,7 @@ const FLOATING: { icon: LucideIcon; label: string; className: string }[] = [
   },
   {
     icon: MicOff,
-    label: "Physical mic",
+    label: "Mic privacy",
     className: "bottom-[22%] left-0 hidden sm:inline-flex",
   },
 ];
@@ -121,6 +122,7 @@ export function ReserveHero({
               {[
                 `Reserve for just ${formatFee(RESERVATION_FEE_USD)}`,
                 `${PREORDER_DISCOUNT_PERCENT}% off the ${formatFee(LIST_PRICE_USD)} price`,
+                "Fully refundable if we can’t fulfil your order",
                 "Limited first-edition batch",
               ].map((t) => (
                 <li key={t} className="flex items-center gap-2">
@@ -160,7 +162,7 @@ export function ReserveHero({
               whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
               viewport={{ once: true, amount: 0.3 }}
               transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-              className="relative w-[58%] drop-shadow-[0_40px_45px_rgba(74,21,50,0.35)]"
+              className="relative -mt-[10%] w-[56%] drop-shadow-[0_40px_45px_rgba(0,0,0,0.45)]"
             >
               <PendantArt className="w-full" />
             </motion.div>
@@ -203,8 +205,12 @@ export function ReserveHero({
                   {formatFee(LIST_PRICE_USD)}
                 </s>
               </p>
-              <p className="mt-0.5 text-xs text-muted">
-                {formatFee(RESERVATION_FEE_USD)} today to reserve
+              <p className="mt-1 inline-flex rounded-full bg-gold/15 px-2 py-0.5 text-[0.7rem] font-medium tracking-wide text-gold">
+                Save {PREORDER_DISCOUNT_PERCENT}%
+              </p>
+              <p className="mt-1.5 text-xs text-muted">
+                {formatFee(RESERVATION_FEE_USD)} today ·{" "}
+                {formatFee(BALANCE_ON_DELIVERY_USD)} at delivery
               </p>
             </motion.div>
           </div>

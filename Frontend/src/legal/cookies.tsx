@@ -62,17 +62,6 @@ export const COOKIE_POLICY: LegalDoc = {
                 <td>Remembers whether you chose light or dark mode.</td>
                 <td>Until you clear your browser data</td>
               </tr>
-              <tr>
-                <td>
-                  <code>svaraa-preorder-draft</code>
-                </td>
-                <td>Session storage · Strictly necessary</td>
-                <td>
-                  Keeps your pre-order form filled in while you complete payment on Stripe, so you don&rsquo;t have to
-                  type it again if you return. It is deleted once payment is confirmed.
-                </td>
-                <td>Until you close the tab</td>
-              </tr>
             </tbody>
           </table>
         </div>
@@ -93,13 +82,13 @@ export const COOKIE_POLICY: LegalDoc = {
             </thead>
             <tbody>
               <tr>
-                <td>Stripe</td>
+                <td>Razorpay</td>
                 <td>When you pay a reservation fee</td>
                 <td>
-                  Stripe&rsquo;s secure payment page sets strictly necessary cookies for payment security and fraud
-                  prevention, under{' '}
-                  <a href="https://stripe.com/cookie-settings" target="_blank" rel="noopener noreferrer">
-                    Stripe&rsquo;s cookie policy
+                  Razorpay&rsquo;s secure payment window, which opens over our page, sets strictly necessary cookies
+                  for payment security and fraud prevention, under{' '}
+                  <a href="https://razorpay.com/privacy/" target="_blank" rel="noopener noreferrer">
+                    Razorpay&rsquo;s privacy policy
                   </a>
                   .
                 </td>
@@ -140,10 +129,9 @@ export const COOKIE_POLICY: LegalDoc = {
             &ldquo;Privacy&rdquo; or &ldquo;Site data&rdquo;. If you do:
           </p>
           <ul>
-            <li>the website will use your device&rsquo;s light or dark setting instead of the theme you chose;</li>
-            <li>your pre-order form will not be refilled if you leave the payment page and come back.</li>
+            <li>the website will use your device&rsquo;s light or dark setting instead of the theme you chose.</li>
           </ul>
-          <p>Blocking cookies on Stripe&rsquo;s payment page may stop the payment from completing.</p>
+          <p>Blocking cookies for Razorpay&rsquo;s payment window may stop the payment from completing.</p>
         </>
       ),
     },
