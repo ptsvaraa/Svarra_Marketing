@@ -6,7 +6,7 @@ import { createServer, type IncomingMessage } from 'node:http';
 import { env } from './config/env.js';
 import { route } from './routes/index.js';
 
-/** Turns Node's request into a standard Request, keeping the raw body (Stripe signs it). */
+/** Turns Node's request into a standard Request, keeping the raw body (Razorpay signs it). */
 async function toRequest(req: IncomingMessage): Promise<Request> {
   const url = new URL(req.url ?? '/', `http://${req.headers.host ?? `localhost:${env.port}`}`);
   const headers = new Headers();
@@ -35,7 +35,7 @@ const server = createServer(async (req, res) => {
 server.listen(env.port, () => {
   console.info(`Svaraa API listening on http://localhost:${env.port}`);
   console.info(
-    `Stripe ${env.stripeSecretKey ? 'configured' : 'not configured'} · ` +
+    `Razorpay ${env.razorpayKeyId && env.razorpayKeySecret ? `configured (${env.razorpayLive ? 'live' : 'test'})` : 'not configured'} · ` +
       `database ${env.supabaseUrl && env.supabaseServiceRoleKey ? 'configured' : 'not configured'} · ` +
       `allowed origins: ${env.allowedOrigins.join(', ') || 'none'}`,
   );

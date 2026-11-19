@@ -4,9 +4,9 @@
  * the same handlers.
  */
 import { env } from '../config/env.js';
-import { getCheckoutSession } from '../controllers/checkoutSession.js';
-import { createCheckoutSession } from '../controllers/createCheckoutSession.js';
-import { handleStripeWebhook } from '../controllers/stripeWebhook.js';
+import { createOrder } from '../controllers/createOrder.js';
+import { handleRazorpayWebhook } from '../controllers/razorpayWebhook.js';
+import { verifyPayment } from '../controllers/verifyPayment.js';
 import { preflight, withCors, type Handler } from '../middleware/cors.js';
 import { json } from '../utils/http.js';
 
@@ -14,16 +14,17 @@ import { json } from '../utils/http.js';
 const health: Handler = async () =>
   json({
     ok: true,
-    stripe: !!env.stripeSecretKey,
-    stripeWebhook: !!env.stripeWebhookSecret,
+    razorpay: !!(env.razorpayKeyId && env.razorpayKeySecret),
+    razorpayMode: env.razorpayKeyId ? (env.razorpayLive ? 'live' : 'test') : null,
+    razorpayWebhook: !!env.razorpayWebhookSecret,
     database: !!(env.supabaseUrl && env.supabaseServiceRoleKey),
   });
 
-/** Handlers per method for each path. Browser-facing endpoints get CORS; Stripe's webhook is server-to-server. */
+/** Handlers per method for each path. Browser-facing endpoints get CORS; Razorpay's webhook is server-to-server. */
 export const endpoints = {
-  '/api/create-checkout-session': { POST: withCors(createCheckoutSession), OPTIONS: preflight },
-  '/api/checkout-session': { GET: withCors(getCheckoutSession), OPTIONS: preflight },
-  '/api/stripe-webhook': { POST: handleStripeWebhook },
+  '/api/create-order': { POST: withCors(createOrder), OPTIONS: preflight },
+  '/api/verify-payment': { POST: withCors(verifyPayment), OPTIONS: preflight },
+  '/api/razorpay-webhook': { POST: handleRazorpayWebhook },
   '/api/health': { GET: withCors(health), OPTIONS: preflight },
 } satisfies Record<string, Partial<Record<'GET' | 'POST' | 'OPTIONS', Handler>>>;
 

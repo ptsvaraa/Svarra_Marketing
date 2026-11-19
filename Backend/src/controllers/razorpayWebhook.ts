@@ -1,154 +1,122 @@
 /**
- * POST /api/stripe-webhook
- * Stripe calls this when a payment's state changes. The signature is verified,
- * so only genuine Stripe events are trusted. The webhook, not the success page,
- * is what marks an order as reserved in the database: buyers can close the tab
- * before returning, but Stripe keeps retrying the webhook until it gets a 2xx reply.
+ * POST /api/razorpay-webhook
+ * Razorpay calls this when a payment or refund changes. The X-Razorpay-Signature header
+ * is checked against the raw body, so only genuine Razorpay events are trusted. With
+ * /api/verify-payment this records every reservation even if the buyer closes the tab
+ * before the browser reports back: Razorpay retries the webhook until it gets a 2xx reply.
  * Every event is logged in webhook_events and handled at most once.
  *
- * In the Stripe dashboard, add an endpoint for https://<your-backend>/api/stripe-webhook
- * with these events, then copy its signing secret into STRIPE_WEBHOOK_SECRET:
- *   checkout.session.completed
- *   checkout.session.async_payment_succeeded
- *   checkout.session.async_payment_failed
- *   checkout.session.expired
+ * In the Razorpay dashboard (Accounts & Settings → Webhooks), add
+ * https://<your-backend>/api/razorpay-webhook with a secret of your choice, copy that
+ * secret into RAZORPAY_WEBHOOK_SECRET, and tick these events:
+ *   payment.captured
+ *   payment.failed
+ *   order.paid
  *   refund.created
- *   refund.updated
+ *   refund.processed
  *   refund.failed
  */
-import type Stripe from 'stripe';
+import { createHash } from 'node:crypto';
 import { env } from '../config/env.js';
 import { getDb } from '../services/db.js';
+import { beginWebhookEvent, finishWebhookEvent, markPaymentFailed, recordRefund } from '../services/orders.js';
 import {
-  beginWebhookEvent,
-  buildPreorder,
-  createPreorder,
-  finishWebhookEvent,
-  markPaymentSucceeded,
-  markPaymentUnpaid,
-  recordRefund,
-} from '../services/orders.js';
-import { getStripe } from '../services/stripe.js';
-import type { PreorderDetails } from '../shared/preorderValidation.js';
+  getRazorpay,
+  verifyWebhookSignature,
+  type RazorpayClient,
+  type RazorpayOrder,
+  type RazorpayPayment,
+  type RazorpayRefund,
+} from '../services/razorpay.js';
+import { forwardReservation, recordCapturedPayment } from '../services/reservations.js';
 import { json } from '../utils/http.js';
 
 type Db = NonNullable<ReturnType<typeof getDb>>;
 
-/** The form details, read back from the metadata createCheckoutSession put on the session. */
-function detailsFromMetadata(session: Stripe.Checkout.Session): PreorderDetails {
-  const m = session.metadata ?? {};
-  return {
-    buyerType: m.buyer_type === 'business' ? 'business' : 'individual',
-    organisation: m.organisation ?? '',
-    gstin: m.gstin ?? '',
-    fullName: m.full_name || session.customer_details?.name || 'Unknown',
-    phone: m.phone || session.customer_details?.phone || '',
-    email: m.email || session.customer_details?.email || session.customer_email || 'unknown',
-    addressLine1: m.address_line1 || 'unknown',
-    addressLine2: m.address_line2 ?? '',
-    city: m.city || 'unknown',
-    state: m.state || 'unknown',
-    pincode: m.pincode || 'unknown',
-    quantity: Number(m.quantity) > 0 ? Number(m.quantity) : 1,
-    wearer: m.wearer ?? '',
-    consent: m.contact_consent === 'yes',
+/** The parts of a webhook body we read. */
+interface WebhookBody {
+  event: string;
+  payload: {
+    payment?: { entity: RazorpayPayment };
+    order?: { entity: RazorpayOrder };
+    refund?: { entity: RazorpayRefund };
   };
 }
 
-/**
- * Marks the order reserved. Safe to call repeatedly for the same session: only
- * the first call changes anything. Returns true the first time.
- */
-async function markPaid(db: Db, session: Stripe.Checkout.Session): Promise<boolean> {
-  const result = await markPaymentSucceeded(db, session);
-  if (result !== 'not_found') return result === 'paid_now';
-
-  // No order for this session (e.g. it was paid before the database existed).
-  // Rebuild it from the Stripe metadata so a paid order is never lost.
-  const reference = session.metadata?.reference ?? session.client_reference_id ?? `STRIPE-${session.id.slice(-10)}`;
-  await createPreorder(db, buildPreorder(detailsFromMetadata(session), reference, session.id));
-  console.warn('[webhook] Paid session had no order; rebuilt it from metadata', session.id);
-  return (await markPaymentSucceeded(db, session)) === 'paid_now';
-}
-
-/** Optional copy of each new paid reservation to RESERVATIONS_WEBHOOK_URL (Google Sheet, CRM…). Best effort. */
-async function forwardReservation(session: Stripe.Checkout.Session) {
-  const target = env.reservationsWebhookUrl;
-  if (!target) return;
-  try {
-    const res = await fetch(target, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...session.metadata,
-        stripe_session_id: session.id,
-        amount_paid: session.amount_total == null ? null : session.amount_total / 100,
-        currency: session.currency,
-        paid_at: new Date().toISOString(),
-      }),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  } catch (err) {
-    // The database already has the order, so a failed copy is logged rather than retried.
-    console.error('[webhook] Could not forward reservation', session.id, err);
+async function onCaptured(db: Db, razorpay: RazorpayClient, payment: RazorpayPayment, order?: RazorpayOrder) {
+  if (payment.status !== 'captured' || !payment.order_id) return;
+  const fullOrder = order ?? (await razorpay.fetchOrder(payment.order_id));
+  if (await recordCapturedPayment(db, fullOrder, payment)) {
+    console.info('[order] Reserved', fullOrder.receipt ?? fullOrder.id);
+    await forwardReservation(fullOrder, payment);
   }
 }
 
-async function handleEvent(db: Db, event: Stripe.Event) {
-  switch (event.type) {
-    case 'checkout.session.completed':
-    case 'checkout.session.async_payment_succeeded': {
-      const session = event.data.object;
-      // 'unpaid' here means a delayed payment method; async_payment_succeeded/failed follows later.
-      if (session.payment_status === 'paid' && (await markPaid(db, session))) {
-        console.info('[order] Reserved', session.metadata?.reference ?? session.id);
-        await forwardReservation(session);
-      }
+async function handleEvent(db: Db, razorpay: RazorpayClient, body: WebhookBody) {
+  const payment = body.payload.payment?.entity;
+  switch (body.event) {
+    case 'payment.captured':
+      if (payment) await onCaptured(db, razorpay, payment);
       break;
-    }
-    case 'checkout.session.async_payment_failed':
-      await markPaymentUnpaid(db, event.data.object.id, 'failed', 'async payment failed');
+    case 'order.paid':
+      if (payment) await onCaptured(db, razorpay, payment, body.payload.order?.entity);
       break;
-    case 'checkout.session.expired':
-      await markPaymentUnpaid(db, event.data.object.id, 'expired');
+    case 'payment.failed':
+      // The buyer can retry in the same Checkout window; a later success marks the order reserved again.
+      if (payment?.order_id) await markPaymentFailed(db, payment.order_id, payment.error_description);
       break;
     case 'refund.created':
-    case 'refund.updated':
-    case 'refund.failed':
+    case 'refund.processed':
+    case 'refund.failed': {
+      const refund = body.payload.refund?.entity;
+      if (!refund) break;
+      const result = await recordRefund(db, {
+        razorpayPaymentId: refund.payment_id,
+        refundId: refund.id,
+        status: refund.status,
+        amountMinor: refund.amount,
+        currency: refund.currency,
+      });
       // Refunds of payments that aren't pre-orders (other products on the account) are ignored.
-      if ((await recordRefund(db, event.data.object)) === 'not_found') {
-        console.warn('[webhook] Refund for a payment with no order', event.data.object.id);
-      }
+      if (result === 'not_found') console.warn('[webhook] Refund for a payment with no order', refund.id);
       break;
+    }
   }
 }
 
-export async function handleStripeWebhook(request: Request): Promise<Response> {
-  const stripe = getStripe();
+export async function handleRazorpayWebhook(request: Request): Promise<Response> {
+  const razorpay = getRazorpay();
   const db = getDb();
-  const secret = env.stripeWebhookSecret;
-  if (!stripe || !db || !secret) return json({ error: 'Webhook not configured.' }, 503);
+  if (!razorpay || !db || !env.razorpayWebhookSecret) return json({ error: 'Webhook not configured.' }, 503);
 
-  const signature = request.headers.get('stripe-signature');
+  const signature = request.headers.get('x-razorpay-signature');
   if (!signature) return json({ error: 'Missing signature.' }, 400);
 
-  let event: Stripe.Event;
-  try {
-    // The raw body is needed to verify Stripe's signature.
-    event = await stripe.webhooks.constructEventAsync(await request.text(), signature, secret);
-  } catch (err) {
-    console.warn('[webhook] Signature check failed', err);
+  // The raw body is needed to verify Razorpay's signature.
+  const raw = await request.text();
+  if (!verifyWebhookSignature(raw, signature)) {
+    console.warn('[webhook] Signature check failed');
     return json({ error: 'Invalid signature.' }, 400);
   }
 
+  let body: WebhookBody;
+  try {
+    body = JSON.parse(raw) as WebhookBody;
+  } catch {
+    return json({ error: 'Invalid body.' }, 400);
+  }
+  // Razorpay sends the same event id on every retry; fall back to a hash of the body.
+  const id = request.headers.get('x-razorpay-event-id') ?? `sha256:${createHash('sha256').update(raw).digest('hex')}`;
+  const event = { id, type: body.event, livemode: env.razorpayLive, payload: body };
+
   try {
     if (!(await beginWebhookEvent(db, event))) return json({ received: true, duplicate: true });
-    await handleEvent(db, event);
-    await finishWebhookEvent(db, event.id);
+    await handleEvent(db, razorpay, body);
+    await finishWebhookEvent(db, id);
   } catch (err) {
-    // A non-2xx reply makes Stripe retry the event later, so a database hiccup doesn't lose it.
-    console.error('[webhook] Could not handle event', event.type, event.id, err);
-    await finishWebhookEvent(db, event.id, err);
+    // A non-2xx reply makes Razorpay retry the event later, so a database hiccup doesn't lose it.
+    console.error('[webhook] Could not handle event', body.event, id, err);
+    await finishWebhookEvent(db, id, err);
     return json({ error: 'Could not record the event.' }, 500);
   }
 

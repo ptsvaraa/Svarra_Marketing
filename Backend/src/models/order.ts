@@ -14,7 +14,7 @@ export interface NewPreorder {
   organisation: { legal_name: string; gstin: string | null } | null;
   address: { line1: string; line2: string | null; city: string; state: string; postal_code: string; country: string };
   items: { sku: string; kind: 'reservation' | 'hold' | 'booking'; description: string; unit_amount_minor: number; quantity: number }[];
-  /** The Stripe Checkout session that pays for it. */
+  /** The Razorpay order that pays for it (order_…). */
   payment: { provider_session_id: string } | null;
   consent: { purpose: string; granted: boolean; policy_version: string; source: string };
 }

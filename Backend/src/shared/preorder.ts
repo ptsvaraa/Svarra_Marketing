@@ -1,6 +1,6 @@
 /**
  * Pre-order rules the server enforces before charging: who may order how many,
- * and what each reservation costs. Stripe is charged exactly feeLines().
+ * and what each reservation costs. Razorpay is charged exactly feeLines().
  *
  * The frontend has the same rules in Frontend/src/data/preorder.ts, to show the
  * price and check the form before it is sent. If you change a quantity limit or a
@@ -56,18 +56,18 @@ export const BUYER_TYPES = [
 
 export type BuyerType = (typeof BUYER_TYPES)[number]['value'];
 
-/** Business orders: at least 10 pendants, at most 20 online. Larger orders go through the team first. */
+/** Business orders: at least 10 pendants, at most 100 online. Larger orders go through the team first. */
 export const BUSINESS_MIN_QUANTITY = 10;
-export const BUSINESS_MAX_QUANTITY = 20;
+export const BUSINESS_MAX_QUANTITY = 100;
 
 /** Inbox for bulk orders above BUSINESS_MAX_QUANTITY. Confirm this address before launch. */
-export const BUSINESS_CONTACT_EMAIL = 'sales@svaraa.ai';
+export const BUSINESS_CONTACT_EMAIL = 'srk@svaraa.ai';
 
 /** Allowed quantity range for each kind of buyer. */
 export const quantityRange = (buyer: BuyerType) =>
   buyer === 'business' ? { min: BUSINESS_MIN_QUANTITY, max: BUSINESS_MAX_QUANTITY } : { min: 1, max: MAX_QUANTITY };
 
-/** Product name shown on the Stripe payment page and receipts. */
+/** Product name shown on the Razorpay payment window and receipts. */
 export const PRODUCT_NAME = 'Svaraa Fold';
 
 /** The product's SKU in the database's products table (seeded by 0002_commerce.sql). */
@@ -77,57 +77,105 @@ export const PRODUCT_SKU = 'SVARAA-FOLD';
  * Version of the privacy policy the buyer agrees to, saved with their consent.
  * Keep in step with LAST_UPDATED in Frontend/src/legal/company.ts.
  */
-export const PRIVACY_POLICY_VERSION = '30 October 2026';
+export const PRIVACY_POLICY_VERSION = '20 November 2026';
 
 /** Reservation fee per pendant, in US dollars. */
-export const RESERVATION_FEE_USD = 5;
+export const RESERVATION_FEE_USD = 9;
 
-export const formatFee = (usd: number) => `$${usd}`;
+/** Refund promise for everything paid today; matches "If we cancel" in the Terms. */
+export const REFUND_PROMISE = 'Fully refundable if we can’t fulfil your order.';
+
+/**
+ * Currencies a reservation can be paid in: rupees in India (UPI, Indian cards, netbanking,
+ * wallets) or US dollars from abroad (international cards). Lower case, as stored.
+ */
+export const CURRENCIES = ['inr', 'usd'] as const;
+export type Currency = (typeof CURRENCIES)[number];
+
+/** "$9", "$1,089" or "₹799", "₹9,599" (Indian digit grouping). */
+export const formatFee = (amount: number, currency: Currency = 'usd') =>
+  currency === 'inr' ? `₹${amount.toLocaleString('en-IN')}` : `$${amount.toLocaleString('en-US')}`;
 
 /**
  * Pendant pricing. The pre-order price is the list price less the pre-order discount,
  * paid in two parts: the reservation fee today and the balance once delivery starts.
- *   $130 list − 20% = $104 = $5 today + $99 at delivery (plus taxes and delivery charges).
+ *   $180 list − 40% = $108 = $9 today + $99 at delivery (plus taxes and delivery charges).
  */
-export const LIST_PRICE_USD = 130;
-export const PREORDER_DISCOUNT_PERCENT = 20;
+export const LIST_PRICE_USD = 180;
+export const PREORDER_DISCOUNT_PERCENT = 40;
 export const PREORDER_PRICE_USD = (LIST_PRICE_USD * (100 - PREORDER_DISCOUNT_PERCENT)) / 100;
 export const BALANCE_ON_DELIVERY_USD = PREORDER_PRICE_USD - RESERVATION_FEE_USD;
 export const SAVING_USD = LIST_PRICE_USD - PREORDER_PRICE_USD;
 
 /** Business orders: one fee to hold the organisation's place, plus a booking amount per pendant. */
-export const BUSINESS_HOLD_FEE_USD = 5;
-export const BUSINESS_BOOKING_PER_PENDANT_USD = 5;
+export const BUSINESS_HOLD_FEE_USD = 9;
+export const BUSINESS_BOOKING_PER_PENDANT_USD = 9;
+
+/**
+ * Rupee prices, for buyers paying in India. Fixed amounts chosen for India, not converted
+ * from the dollar prices. PLACEHOLDERS: confirm before launch.
+ *   ₹15,999 list → ₹9,599 pre-order = ₹799 today + ₹8,800 at delivery (plus taxes and delivery charges).
+ */
+export const RESERVATION_FEE_INR = 799;
+export const LIST_PRICE_INR = 15999;
+export const PREORDER_PRICE_INR = 9599;
+export const BALANCE_ON_DELIVERY_INR = PREORDER_PRICE_INR - RESERVATION_FEE_INR;
+export const BUSINESS_HOLD_FEE_INR = 799;
+export const BUSINESS_BOOKING_PER_PENDANT_INR = 799;
+
+/** Every price in each currency, in whole rupees or dollars. */
+export const PRICES: Readonly<
+  Record<Currency, { list: number; preorder: number; reservation: number; balance: number; hold: number; booking: number }>
+> = {
+  usd: {
+    list: LIST_PRICE_USD,
+    preorder: PREORDER_PRICE_USD,
+    reservation: RESERVATION_FEE_USD,
+    balance: BALANCE_ON_DELIVERY_USD,
+    hold: BUSINESS_HOLD_FEE_USD,
+    booking: BUSINESS_BOOKING_PER_PENDANT_USD,
+  },
+  inr: {
+    list: LIST_PRICE_INR,
+    preorder: PREORDER_PRICE_INR,
+    reservation: RESERVATION_FEE_INR,
+    balance: BALANCE_ON_DELIVERY_INR,
+    hold: BUSINESS_HOLD_FEE_INR,
+    booking: BUSINESS_BOOKING_PER_PENDANT_INR,
+  },
+};
 
 export interface FeeLine {
   id: 'reservation' | 'hold' | 'booking';
   label: string;
   description: string;
-  unitUsd: number;
+  /** Price of one, in whole units of the line's currency. */
+  unit: number;
   quantity: number;
 }
 
 /**
- * What a reservation costs, line by line. The form shows these lines and the
- * Stripe server charges exactly them, so the two can never disagree.
- *   Individual: $5 per pendant.
- *   Business:   $5 to hold your place + $5 booking amount per pendant (20 pendants = $105).
+ * What a reservation costs, line by line, in the chosen currency. The form shows these lines
+ * and the server charges exactly them through Razorpay, so the two can never disagree.
+ *   Individual: $9 (₹799) per pendant.
+ *   Business:   $9 (₹799) to hold your place + $9 (₹799) booking amount per pendant.
  */
-export function feeLines(buyer: BuyerType, quantity: number): FeeLine[] {
+export function feeLines(buyer: BuyerType, quantity: number, currency: Currency = 'usd'): FeeLine[] {
+  const p = PRICES[currency];
   if (buyer === 'business') {
     return [
       {
         id: 'hold',
         label: 'Hold your place',
         description: 'Holds your organisation’s place in the limited first edition.',
-        unitUsd: BUSINESS_HOLD_FEE_USD,
+        unit: p.hold,
         quantity: 1,
       },
       {
         id: 'booking',
         label: 'Booking amount',
         description: 'Booking amount per pendant.',
-        unitUsd: BUSINESS_BOOKING_PER_PENDANT_USD,
+        unit: p.booking,
         quantity,
       },
     ];
@@ -137,10 +185,13 @@ export function feeLines(buyer: BuyerType, quantity: number): FeeLine[] {
       id: 'reservation',
       label: 'Reservation fee',
       description: 'Reservation fee that holds your place in the limited first edition.',
-      unitUsd: RESERVATION_FEE_USD,
+      unit: p.reservation,
       quantity,
     },
   ];
 }
 
-export const feeTotal = (lines: readonly FeeLine[]) => lines.reduce((sum, l) => sum + l.unitUsd * l.quantity, 0);
+export const feeTotal = (lines: readonly FeeLine[]) => lines.reduce((sum, l) => sum + l.unit * l.quantity, 0);
+
+/** Whole rupees or dollars to the smallest unit (paise or cents), as payment providers expect. */
+export const toMinor = (amount: number) => Math.round(amount * 100);

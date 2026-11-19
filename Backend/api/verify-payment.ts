@@ -1,6 +1,6 @@
-/** Vercel entry point for /api/checkout-session. The handlers live in src/ (see src/routes/index.ts). */
+/** Vercel entry point for /api/verify-payment. The handlers live in src/ (see src/routes/index.ts). */
 import { endpoints } from '../src/routes/index.js';
 
-const route = endpoints['/api/checkout-session'];
-export const GET = route.GET;
+const route = endpoints['/api/verify-payment'];
+export const POST = route.POST;
 export const OPTIONS = route.OPTIONS;
