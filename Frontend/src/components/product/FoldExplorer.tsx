@@ -218,7 +218,7 @@ export function FoldExplorer() {
                     type="button"
                     aria-label={label}
                     onClick={run}
-                    className="inline-flex size-9 items-center justify-center rounded-full border border-line bg-glass-strong text-heading transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-primary"
+                    className="inline-flex size-10 items-center justify-center rounded-full border border-line bg-glass-strong text-heading transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-primary"
                   >
                     <Icon className="size-4" aria-hidden="true" />
                   </button>
@@ -286,8 +286,9 @@ export function FoldExplorer() {
               )}
 
               {/* Try the pendant's lights: power, recording and SOS. */}
-              <div className="flex flex-wrap gap-2" role="group" aria-label="Pendant lights">
-                <button type="button" aria-pressed={lights.power} onClick={togglePower} className={toggleClass(lights.power)}>
+              {/* Narrow phones: Pendant and Recording side by side, SOS as a full-width bar below them. */}
+              <div className="grid grid-cols-2 gap-2 min-[440px]:flex min-[440px]:flex-wrap" role="group" aria-label="Pendant lights">
+                <button type="button" aria-pressed={lights.power} onClick={togglePower} className={cn(toggleClass(lights.power), 'justify-center')}>
                   <Power className="size-4" aria-hidden="true" />
                   Pendant: {lights.power ? 'on' : 'off'}
                 </button>
@@ -295,7 +296,7 @@ export function FoldExplorer() {
                   type="button"
                   aria-pressed={lights.recording}
                   onClick={toggleRecording}
-                  className={toggleClass(lights.recording)}
+                  className={cn(toggleClass(lights.recording), 'justify-center')}
                 >
                   {lights.recording ? <MicOff className="size-4" aria-hidden="true" /> : <Mic className="size-4" aria-hidden="true" />}
                   Recording: {lights.recording ? 'on' : 'off'}
@@ -306,6 +307,7 @@ export function FoldExplorer() {
                   onClick={toggleSos}
                   className={cn(
                     pillClass(),
+                    'col-span-2 justify-center',
                     lights.sos
                       ? 'border-danger bg-danger text-white'
                       : 'border-danger/40 bg-danger-soft text-danger hover:border-danger',

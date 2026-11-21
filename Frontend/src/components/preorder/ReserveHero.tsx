@@ -47,22 +47,25 @@ const HIGHLIGHTS: { icon: LucideIcon; title: string; body: string }[] = [
   },
 ];
 
-/** Feature tags that float around the pendant in the hero. Each sets its own display, so some can hide on phones. */
+/**
+ * Feature tags around the pendant. From small tablets up they float around it (these positions);
+ * on phones there is no room, so they sit in a row under the pendant instead.
+ */
 const FLOATING: { icon: LucideIcon; label: string; className: string }[] = [
   {
     icon: ShieldCheck,
     label: "Hold the gold button for SOS",
-    className: "inline-flex top-[10%] left-0 sm:left-[2%]",
+    className: "sm:top-[10%] sm:left-[2%]",
   },
   {
     icon: Bell,
     label: "Offline reminders",
-    className: "inline-flex top-[27%] right-0 sm:top-[20%]",
+    className: "sm:top-[20%] sm:right-0",
   },
   {
     icon: MicOff,
     label: "Mic privacy",
-    className: "bottom-[22%] left-0 hidden sm:inline-flex",
+    className: "sm:bottom-[22%] sm:left-0",
   },
 ];
 
@@ -142,58 +145,67 @@ export function ReserveHero({
             )}
           </div>
 
-          {/* Product stage: the pendant as vector art on a soft glow, with its key features around it. */}
-          <div className="relative mx-auto flex aspect-square w-full max-w-[560px] items-center justify-center">
-            <div
-              className="absolute inset-[6%] rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--c-gold)_28%,transparent)_0%,transparent_68%)]"
-              aria-hidden="true"
-            />
-            {/* Rings are stronger in light mode, where pale gold barely shows on the cream background. */}
-            <div
-              className="absolute inset-[12%] rounded-full border-[1.5px] border-gold/55 dark:border dark:border-gold/25"
-              aria-hidden="true"
-            />
-            <div
-              className="absolute inset-[2%] rounded-full border border-dashed border-gold/45 dark:border-gold/20"
-              aria-hidden="true"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.94, rotate: -6 }}
-              whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-              className="relative -mt-[10%] w-[56%] drop-shadow-[0_40px_45px_rgba(0,0,0,0.45)]"
-            >
-              <PendantArt className="w-full" />
-            </motion.div>
-
-            {FLOATING.map(({ icon: Icon, label, className: pos }, i) => (
-              <motion.span
-                key={label}
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
+          {/*
+            Product stage: the pendant as vector art on a soft glow, with its key features around it.
+            On phones the tags and price card sit below the pendant (in flow) so nothing covers it;
+            from small tablets up their wrapper turns into "contents" and they float on the stage.
+          */}
+          <div className="relative mx-auto w-full max-w-[560px]">
+            <div className="relative flex aspect-square w-full items-center justify-center">
+              <div
+                className="absolute inset-[6%] rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--c-gold)_28%,transparent)_0%,transparent_68%)]"
+                aria-hidden="true"
+              />
+              {/* Rings are stronger in light mode, where pale gold barely shows on the cream background. */}
+              <div
+                className="absolute inset-[12%] rounded-full border-[1.5px] border-gold/55 dark:border dark:border-gold/25"
+                aria-hidden="true"
+              />
+              <div
+                className="absolute inset-[2%] rounded-full border border-dashed border-gold/45 dark:border-gold/20"
+                aria-hidden="true"
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.94, rotate: -6 }}
+                whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
                 viewport={{ once: true, amount: 0.3 }}
-                transition={{
-                  delay: 0.35 + i * 0.12,
-                  duration: 0.5,
-                  ease: "easeOut",
-                }}
-                className={cn(
-                  "glass absolute items-center gap-2 rounded-full px-3.5 py-2 text-xs font-medium whitespace-nowrap text-heading shadow-[0_14px_30px_-18px_var(--c-shadow)] sm:text-sm",
-                  pos,
-                )}
+                transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+                className="relative -mt-[10%] w-[56%] drop-shadow-[0_40px_45px_rgba(0,0,0,0.45)]"
               >
-                <Icon className="size-4 text-primary" aria-hidden="true" />
-                {label}
-              </motion.span>
-            ))}
+                <PendantArt className="w-full" />
+              </motion.div>
+            </div>
+
+            {/* Phones: a centred row under the pendant. Small tablets up: "contents", so the tags float on the stage. */}
+            <div className="-mt-[4%] flex flex-wrap justify-center gap-2 sm:contents">
+              {FLOATING.map(({ icon: Icon, label, className: pos }, i) => (
+                <motion.span
+                  key={label}
+                  initial={{ opacity: 0, y: 10 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.3 }}
+                  transition={{
+                    delay: 0.35 + i * 0.12,
+                    duration: 0.5,
+                    ease: "easeOut",
+                  }}
+                  className={cn(
+                    "glass inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-xs font-medium whitespace-nowrap text-heading shadow-[0_14px_30px_-18px_var(--c-shadow)] sm:absolute sm:text-sm",
+                    pos,
+                  )}
+                >
+                  <Icon className="size-4 text-primary" aria-hidden="true" />
+                  {label}
+                </motion.span>
+              ))}
+            </div>
 
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.3 }}
               transition={{ delay: 0.8, duration: 0.5, ease: "easeOut" }}
-              className="glass absolute right-0 bottom-[2%] rounded-2xl px-5 py-3.5 text-right shadow-[0_20px_40px_-22px_var(--c-shadow)] sm:right-[4%]"
+              className="glass mx-auto mt-4 w-fit rounded-2xl px-5 py-3.5 text-center shadow-[0_20px_40px_-22px_var(--c-shadow)] sm:absolute sm:right-[4%] sm:bottom-[2%] sm:mt-0 sm:text-right"
             >
               <p className="text-xs tracking-[0.18em] text-muted uppercase">
                 Pre-order price

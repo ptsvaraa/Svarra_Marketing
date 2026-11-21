@@ -19,11 +19,11 @@ const LINKS = [
 const PREORDER_HREF: string | undefined = '/pre-order';
 
 const preorderClass =
-  'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-primary px-3 text-sm font-medium whitespace-nowrap text-on-primary shadow-[0_10px_24px_-14px_var(--c-primary)] transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:h-10 sm:px-4';
+  'inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl bg-primary px-3 text-sm font-medium whitespace-nowrap text-on-primary shadow-[0_10px_24px_-14px_var(--c-primary)] transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:px-4';
 
 /** Square icon button; each use adds its own display, so it can hide at some widths. */
 const iconButtonClass =
-  'size-9 shrink-0 items-center justify-center rounded-xl border border-line text-primary transition-colors hover:bg-primary/5 focus-visible:outline-2 focus-visible:outline-primary sm:size-10';
+  'size-10 shrink-0 items-center justify-center rounded-xl border border-line text-primary transition-colors hover:bg-primary/5 focus-visible:outline-2 focus-visible:outline-primary';
 
 export function Navbar() {
   const { theme, toggle } = useTheme();

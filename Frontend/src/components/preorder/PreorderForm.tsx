@@ -583,7 +583,7 @@ export function PreorderForm() {
           <span id={id('currency-label')} className="text-sm font-medium text-heading">
             Pay in
           </span>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid gap-2 min-[440px]:grid-cols-2">
             {CURRENCY_OPTIONS.map((c) => {
               const on = currency === c.value;
               return (

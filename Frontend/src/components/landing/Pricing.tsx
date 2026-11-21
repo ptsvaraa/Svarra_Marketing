@@ -332,7 +332,7 @@ export function Pricing() {
             A plan for everyday <em className="text-accent">wellbeing.</em>
           </h2>
           <p className="mt-5 text-lg leading-relaxed text-muted">
-            Every pendant works on the Free plan. Upgrade any time for more access to the 7 Svaraas &rsquo;s voice, care and
+            Every pendant works on the Free plan. Upgrade any time for more access to the 7 Svaraas&rsquo; voice, care and
             family features.
           </p>
         </motion.div>

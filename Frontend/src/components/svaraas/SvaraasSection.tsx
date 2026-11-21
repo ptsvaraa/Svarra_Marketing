@@ -33,7 +33,7 @@ export function SvaraasSection({ selected, onSelect }: SvaraasSectionProps) {
         </div>
 
         {/* Pinned just below the sticky navbar on phones. */}
-        <div className="sticky top-[4.5rem] z-20 mb-10 sm:static">
+        <div className="sticky top-[3.75rem] z-20 mb-10 sm:static">
           <div className="mx-auto w-fit max-w-full rounded-2xl px-1 py-0.5 max-sm:glass">
             <SvaraaTabs
               items={SVARAAS}
