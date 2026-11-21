@@ -93,7 +93,7 @@ export const PREORDER_OPEN = true;
 export const CURRENCIES = ['inr', 'usd'] as const;
 export type Currency = (typeof CURRENCIES)[number];
 
-/** "$9", "$1,089" or "₹799", "₹9,599" (Indian digit grouping). */
+/** "$9", "$1,089" or "₹900", "₹10,800" (Indian digit grouping). */
 export const formatFee = (amount: number, currency: Currency = 'usd') =>
   currency === 'inr' ? `₹${amount.toLocaleString('en-IN')}` : `$${amount.toLocaleString('en-US')}`;
 
@@ -113,16 +113,20 @@ export const BUSINESS_HOLD_FEE_USD = 9;
 export const BUSINESS_BOOKING_PER_PENDANT_USD = 9;
 
 /**
- * Rupee prices, for buyers paying in India. Fixed amounts chosen for India, not converted
- * from the dollar prices. PLACEHOLDERS: confirm before launch.
- *   ₹15,999 list → ₹9,599 pre-order = ₹799 today + ₹8,800 at delivery (plus taxes and delivery charges).
+ * Rupees per US dollar. For now every rupee price is simply the dollar price at this rate
+ * (to be revisited). Change it here and in the other copy of this file.
+ *   $180 → ₹18,000 list; $108 → ₹10,800 pre-order = ₹900 today + ₹9,900 at delivery.
  */
-export const RESERVATION_FEE_INR = 799;
-export const LIST_PRICE_INR = 15999;
-export const PREORDER_PRICE_INR = 9599;
+export const USD_TO_INR = 100;
+const toInr = (usd: number) => Math.round(usd * USD_TO_INR);
+
+/** Rupee prices, for buyers paying in India: the dollar prices at USD_TO_INR. */
+export const RESERVATION_FEE_INR = toInr(RESERVATION_FEE_USD);
+export const LIST_PRICE_INR = toInr(LIST_PRICE_USD);
+export const PREORDER_PRICE_INR = toInr(PREORDER_PRICE_USD);
 export const BALANCE_ON_DELIVERY_INR = PREORDER_PRICE_INR - RESERVATION_FEE_INR;
-export const BUSINESS_HOLD_FEE_INR = 799;
-export const BUSINESS_BOOKING_PER_PENDANT_INR = 799;
+export const BUSINESS_HOLD_FEE_INR = toInr(BUSINESS_HOLD_FEE_USD);
+export const BUSINESS_BOOKING_PER_PENDANT_INR = toInr(BUSINESS_BOOKING_PER_PENDANT_USD);
 
 /** Every price in each currency, in whole rupees or dollars. */
 export const PRICES: Readonly<
@@ -158,8 +162,8 @@ export interface FeeLine {
 /**
  * What a reservation costs, line by line, in the chosen currency. The form shows these lines
  * and the server charges exactly them through Razorpay, so the two can never disagree.
- *   Individual: $9 (₹799) per pendant.
- *   Business:   $9 (₹799) to hold your place + $9 (₹799) booking amount per pendant.
+ *   Individual: $9 (₹900) per pendant.
+ *   Business:   $9 (₹900) to hold your place + $9 (₹900) booking amount per pendant.
  */
 export function feeLines(buyer: BuyerType, quantity: number, currency: Currency = 'usd'): FeeLine[] {
   const p = PRICES[currency];

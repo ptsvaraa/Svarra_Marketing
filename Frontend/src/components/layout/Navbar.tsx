@@ -51,7 +51,13 @@ export function Navbar() {
   return (
     // Sticky rather than fixed: it stays in the flow, so nothing below needs a spacer.
     // Full-bleed bar flush with the top edge; the inner nav keeps the page's content width.
-    <header className="glass sticky top-0 z-50 border-x-0 border-t-0">
+    <header className="sticky top-0 z-50 isolate">
+      {/*
+        The frosted glass sits on its own layer behind the bar, not on the sticky bar itself:
+        iPhone Safari clips or squashes sticky elements that carry a backdrop blur while its
+        address bar slides in and out on scroll.
+      */}
+      <div aria-hidden="true" className="glass pointer-events-none absolute inset-0 -z-10 border-x-0 border-t-0" />
       <nav
         aria-label="Primary"
         className="mx-auto flex max-w-[1320px] items-center justify-between gap-3 px-4 py-3 sm:gap-4 sm:px-6 lg:px-10"
