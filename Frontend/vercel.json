@@ -1,8 +1,32 @@
 {
   "rewrites": [
-    { "source": "/pre-order", "destination": "/index.html" },
-    { "source": "/privacy-policy", "destination": "/index.html" },
-    { "source": "/terms", "destination": "/index.html" },
-    { "source": "/cookie-policy", "destination": "/index.html" }
+    {
+      "source": "/pre-order",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/privacy-policy",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/terms",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/cookie-policy",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/login",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/account",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/reset-password",
+      "destination": "/index.html"
+    }
   ]
 }

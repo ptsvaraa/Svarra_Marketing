@@ -57,7 +57,7 @@ export const TEAM: readonly TeamMember[] = [
   {
     id: 'priyanshu',
     photo: 'priyanshu.webp',
-    name: 'Priyanshu',
+    name: 'Priyanshu Tiwari',
     role: 'Senior AI Developer',
     bio: 'Software developer with experience at WorldQuant. Brings deep expertise in software development and AI engineering, turning ideas into the intelligent systems that power Svaraa.',
   },

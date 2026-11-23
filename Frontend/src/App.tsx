@@ -1,4 +1,4 @@
-import { useCallback, useState, type ComponentType } from 'react';
+import { lazy, Suspense, useCallback, useState, type ComponentType } from 'react';
 import { MotionConfig } from 'framer-motion';
 import type { SvaraaId } from './data/svaraas';
 import { Hero } from './components/landing/Hero';
@@ -20,6 +20,12 @@ import { COOKIE_POLICY } from './legal/cookies';
 import { LegalPage } from './legal/LegalPage';
 import { PRIVACY_POLICY } from './legal/privacy';
 import { TERMS } from './legal/terms';
+import { ACCOUNT_PATHS } from './lib/accountPaths';
+
+// Account pages load on demand, so the login library isn't part of the home page.
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const AccountPage = lazy(() => import('./pages/AccountPage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 
 /** The site's pages, by path. A small lookup is enough here; no router needed. */
 const PAGES: Record<string, ComponentType> = {
@@ -28,6 +34,9 @@ const PAGES: Record<string, ComponentType> = {
   [LEGAL_PATHS.privacy]: () => <LegalPage doc={PRIVACY_POLICY} />,
   [LEGAL_PATHS.terms]: () => <LegalPage doc={TERMS} />,
   [LEGAL_PATHS.cookies]: () => <LegalPage doc={COOKIE_POLICY} />,
+  [ACCOUNT_PATHS.login]: LoginPage,
+  [ACCOUNT_PATHS.account]: AccountPage,
+  [ACCOUNT_PATHS.resetPassword]: ResetPasswordPage,
 };
 
 function HomePage() {
@@ -61,7 +70,9 @@ export function App() {
       <div id="top" className="flex min-h-dvh flex-col">
         <Navbar />
         <main className="flex-1">
-          <Page />
+          <Suspense fallback={<div className="min-h-[60vh]" aria-busy="true" />}>
+            <Page />
+          </Suspense>
         </main>
         <Footer />
       </div>

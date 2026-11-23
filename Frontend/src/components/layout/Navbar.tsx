@@ -1,7 +1,8 @@
 import { useEffect, useId, useState } from 'react';
-import { ArrowRight, Menu, Moon, Sun, X } from 'lucide-react';
+import { ArrowRight, Menu, Moon, Sun, UserRound, X } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 import { PREORDER_OPEN } from '../../data/preorder';
+import { ACCOUNT_PATHS } from '../../lib/accountPaths';
 import { cn } from '../../lib/cn';
 import { SvaraaMark } from '../brand/SvaraaMark';
 
@@ -102,6 +103,10 @@ export function Navbar() {
               <span className="sr-only"> (coming soon)</span>
             </button>
           )}
+          {/* Account: the profile page sends logged-out visitors on to the login page. */}
+          <a href={ACCOUNT_PATHS.account} aria-label="My account" title="My account" className={cn(iconButtonClass, 'hidden sm:inline-flex')}>
+            <UserRound className="size-5" aria-hidden="true" />
+          </a>
           {/* Theme switch: here from small tablets up; inside the menu on phones. */}
           <button type="button" onClick={toggle} aria-label={themeLabel} className={cn(iconButtonClass, 'hidden sm:inline-flex')}>
             <ThemeIcon className="size-5" aria-hidden="true" />
@@ -135,6 +140,16 @@ export function Navbar() {
               </li>
             ))}
             <li className="mt-1 border-t border-line pt-2 sm:hidden">
+              <a
+                href={ACCOUNT_PATHS.account}
+                onClick={() => setOpen(false)}
+                className="flex min-h-12 w-full items-center gap-3 rounded-lg px-2 text-base text-ink transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-primary"
+              >
+                <UserRound className="size-5 text-primary" aria-hidden="true" />
+                My account
+              </a>
+            </li>
+            <li className="sm:hidden">
               <button
                 type="button"
                 onClick={toggle}

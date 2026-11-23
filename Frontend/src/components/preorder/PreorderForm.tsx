@@ -28,6 +28,7 @@ import {
   type Currency,
 } from '../../data/preorder';
 import { cn } from '../../lib/cn';
+import { Field, inputClass } from '../ui/Field';
 import {
   CheckoutCancelledError,
   PreorderUnavailableError,
@@ -75,47 +76,6 @@ const CURRENCY_OPTIONS: { value: Currency; symbol: string; label: string; detail
   { value: 'inr', symbol: '₹', label: 'Pay in rupees', detail: 'UPI, Indian cards, netbanking' },
   { value: 'usd', symbol: '$', label: 'Pay in US dollars', detail: 'International cards' },
 ];
-
-const inputClass = (invalid?: boolean) =>
-  cn(
-    'h-12 w-full rounded-xl border bg-glass-strong px-4 text-[0.95rem] text-ink placeholder:text-subtle',
-    'transition-colors duration-150 focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-primary/30',
-    invalid ? 'border-danger' : 'border-line hover:border-primary/40',
-  );
-
-interface FieldProps {
-  id: string;
-  label: string;
-  error?: string;
-  optional?: boolean;
-  hint?: string;
-  className?: string;
-  children: ReactNode;
-}
-
-function Field({ id, label, error, optional, hint, className, children }: FieldProps) {
-  return (
-    <div className={cn('flex flex-col gap-1.5', className)}>
-      <label htmlFor={id} className="text-sm font-medium text-heading">
-        {label}
-        {optional && <span className="ml-1.5 font-normal text-subtle">(optional)</span>}
-      </label>
-      {children}
-      {error ? (
-        <p id={`${id}-error`} className="flex items-center gap-1.5 text-xs text-danger">
-          <AlertCircle className="size-3.5 shrink-0" aria-hidden="true" />
-          {error}
-        </p>
-      ) : (
-        hint && (
-          <p id={`${id}-hint`} className="text-xs text-subtle">
-            {hint}
-          </p>
-        )
-      )}
-    </div>
-  );
-}
 
 function SectionTitle({ step, children }: { step: number; children: ReactNode }) {
   return (

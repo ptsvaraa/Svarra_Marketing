@@ -4,15 +4,11 @@
  * the payment afterwards, so the key secret never reaches the browser.
  */
 import type { Currency } from '../data/preorder';
+import { API_URL } from './api';
 import type { PreorderDetails } from './preorderValidation';
 
 export { normalisePhone, validatePreorder, type PreorderDetails, type PreorderErrors } from './preorderValidation';
 
-/**
- * Where the backend API lives, e.g. https://api.svaraa.ai. Empty means the same
- * origin as this page: in development, Vite forwards /api to the local backend.
- */
-const API_URL = (import.meta.env.VITE_API_URL ?? '').replace(/\/+$/, '');
 
 const CHECKOUT_SCRIPT = 'https://checkout.razorpay.com/v1/checkout.js';
 
